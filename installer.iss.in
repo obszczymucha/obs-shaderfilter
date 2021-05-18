@@ -32,7 +32,6 @@ OutputBaseFilename=@PROJECT_NAME@-installer
 ; Wizard Information
 WizardStyle=modern
 WizardResizable=yes
-SetupIconFile="@PROJECT_SOURCE_DIR@/media/icon.ico"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
