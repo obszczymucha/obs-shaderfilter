@@ -6,7 +6,7 @@ else()
   cmake_minimum_required(VERSION 3.18)
 endif()
 
-project(obs-shaderfilter VERSION 1.21.1)
+project(obs-shaderfilter VERSION 1.21.2)
 set(PROJECT_FULL_NAME "OBS Shaderfilter")
 
 # Set new UUIDs when you start to create a new plugin.
@@ -15,6 +15,9 @@ set(MACOS_INSTALLER_UUID "D1247630-89C0-498A-8A3B-B0752080DEC2")
 
 add_library(${PROJECT_NAME} MODULE)
 
+target_sources(${PROJECT_NAME} PRIVATE
+	obs-shaderfilter.c)
+	
 if(BUILD_OUT_OF_TREE)
   find_package(libobs REQUIRED)
   include(cmake/ObsPluginHelpers.cmake)
