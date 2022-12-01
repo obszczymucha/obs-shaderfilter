@@ -1,3 +1,4 @@
+//Converted to OpenGL by Q-mii & Exeldro March 8, 2022 - DO NOT USE THIS IT WAS NEVER COMPLETED
 uniform float4x4 ViewProj;
 uniform texture2d image;
 
@@ -10,7 +11,7 @@ uniform float2 uv_size;
 
 
 // variables
-uniform float4 borderColor = 00000000;
+uniform float4 borderColor = {0,0,0,0};
 float targetaspect = 16.0f / 9.0f;
 uniform string notes;
 
@@ -35,7 +36,7 @@ VertData mainTransform(VertData v_in)
 
 	float2 hw = uv_scale;
 	// determine the game window's current aspect ratio
-	float windowaspect = hw.h / hw.w;
+	float windowaspect = hw.x / hw.y;
 
 	// current viewport height should be scaled by this amount
 	float scaleheight = windowaspect / targetaspect;

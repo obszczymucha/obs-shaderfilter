@@ -1,3 +1,4 @@
+//Converted to OpenGL by Exeldro February 22, 2022
 uniform float4 color;
 uniform float level = 10;
 uniform bool invertImageColor;
@@ -25,7 +26,7 @@ float4 mainImage(VertData v_in) : TARGET
     {
         rgba = InvertColor(rgba);
     }
-    float intensity = dot(rgba * color, float3(0.299, 0.587, 0.114));
+    float intensity = rgba.r * color.r * 0.299 + rgba.g * color.g * 0.587 + rgba.b * color.b * 0.114;
 
     //intensity = min(max(intensity,minIntensity),maxIntensity);
 

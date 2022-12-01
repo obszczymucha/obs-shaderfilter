@@ -1,5 +1,5 @@
 //based on https://www.shadertoy.com/view/XssGz8
-//Converted to OpenGL by Exeldro February 14, 2022 + black background removed February 23, 2022
+//Converted to OpenGL by Exeldro February 14, 2022
 uniform float power = 0.01;
 uniform float gamma = 2.2;
 uniform int num_iter = 7;
@@ -163,16 +163,13 @@ float4 mainImage(VertData v_in) : TARGET
 
     float3 sumcol = float3(0.0, 0.0, 0.0);
 	float3 sumw = float3(0.0, 0.0, 0.0);
-    float colA = 0.0;
     
 	for ( int i=0; i<num_iter; ++i )
 	{
 		float3 w = spectrum_offset( t );
 		sumw += w;
         float2 uvd = distort(v_in.uv, t, min_distort, max_distort ); //TODO: move out of loop
-        float4 col = image.Sample(textureSampler, uvd);
-        colA += col.a;
-		sumcol += w * srgb2lin(col.rgb);
+		sumcol += w * srgb2lin(image.Sample(textureSampler, uvd).rgb );
         t += stepsiz;
 	}
     
@@ -182,6 +179,6 @@ float4 mainImage(VertData v_in) : TARGET
     outcol = lin2srgb( outcol );
     outcol += rnd/255.0;
     
-	return float4( outcol, colA/float(num_iter)); 
+	return float4( outcol, 1.0); 
     return image.Sample(textureSampler, v_in.uv);
 }

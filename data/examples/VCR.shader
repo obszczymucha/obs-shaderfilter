@@ -1,4 +1,5 @@
 //based on https://www.shadertoy.com/view/ldjGzV
+//Converted to OpenGL by Exeldro February 19, 2022
 uniform float vertical_shift = 0.4;
 uniform float distort = 1.2;
 uniform float vignet = 1.0;
@@ -19,19 +20,24 @@ float ramp(float y, float start, float end)
 	
 }
 
+float modu(float x, float y)
+{
+	return (x / y) - floor(x / y);
+}
+
 float stripes(float2 uv)
 {
-	return ramp((uv.y*4. + elapsed_time/2.+sin(elapsed_time + sin(elapsed_time*0.63))%1.),0.5,0.6)*stripe;
+	return ramp(modu(uv.y*4. + elapsed_time/2.+sin(elapsed_time + sin(elapsed_time*0.63)),1.),0.5,0.6)*stripe;
 }
 
 float4 getVideo(float2 uv)
 {
 	float2 look = uv;
-	float window = 1./(1.+20.*(look.y-((elapsed_time/4.)%1.))*(look.y-((elapsed_time/4.)%1.)));
+	float window = 1./(1.+20.*(look.y-modu(elapsed_time/4.,1.))*(look.y-modu(elapsed_time/4.,1.)));
 	look.x = look.x + sin(look.y*10. + elapsed_time)/50.*onOff(4.,4.,.3)*(1.+cos(elapsed_time*80.))*window;
 	float vShift = vertical_shift*onOff(2.,3.,.9)*(sin(elapsed_time)*sin(elapsed_time*20.) + 
 										 (0.5 + 0.1*sin(elapsed_time*200.)*cos(elapsed_time)));
-	look.y = ((look.y + vShift) % 1.);
+	look.y = modu((look.y + vShift) , 1.);
     return image.Sample(textureSampler, look);
 }
 
@@ -52,6 +58,6 @@ float4 mainImage(VertData v_in) : TARGET
 	float vignette = ((1.-vigAmt*(uv.y-.5)*(uv.y-.5))*(1.-vigAmt*(uv.x-.5)*(uv.x-.5))-1.)*vignet+1.;
     video += stripes(uv);
     video *= vignette;
-	video *= (((12.+((uv.y*vertical_height+elapsed_time)%1.))/13.)-1.)*vertical_factor+1.;
+	video *= (((12.+modu((uv.y*vertical_height+elapsed_time),1.))/13.)-1.)*vertical_factor+1.;
     return float4(video.r, video.g, video.b ,1.0);
 }

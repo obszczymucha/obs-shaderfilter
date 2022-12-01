@@ -1,4 +1,5 @@
 // background removal effect By Charles Fettinger (https://github.com/Oncorporation)  4/2019
+//Converted to OpenGL by Exeldro February 19, 2022
 uniform float4x4 ViewProj;
 uniform texture2d image;
 
@@ -35,6 +36,10 @@ struct VertDataOut {
 	float2 uv2 : TEXCOORD1;
 };
 
+float dot(float3 a,float3 b){
+	return a.x*b.x+a.y*b.y+a.z*b.z;
+}
+
 //BT.601 to BT.709
 // Correct video colorspace BT.601 [SD] to BT.709 [HD] for HD video input
 // Use this shader only if BT.709 [HD] encoded video is incorrectly matrixed to full range RGB with the BT.601 [SD] colorspace.
@@ -56,7 +61,7 @@ float4 Convert709to601(float4 rgba)
 VertDataOut VSDefault(VertDataIn v_in)
 {
 	VertDataOut vert_out;
-	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.pos = mul(float4(v_in.pos.x, v_in.pos.y, v_in.pos.z, 1.0), ViewProj);
 	vert_out.uv  = v_in.uv;
 	vert_out.uv2 = v_in.uv * uv_scale + uv_offset;
 	return vert_out;
@@ -73,14 +78,14 @@ float4 PSColorMaskRGBA(VertDataOut v_in) : TARGET
 	}
 	if (Convert_709to601)
 	{
-		rgba.rgb = Convert709to601(rgba);
-		targetRGB.rgb = Convert709to601(targetRGB);
+		rgba.rgb = Convert709to601(rgba).rgb;
+		targetRGB.rgb = Convert709to601(targetRGB).rgb;
 	}
 
 	if (Convert_601to709)
 	{
-		rgba.rgb = Convert601to709(rgba);
-		targetRGB.rbg = Convert601to709(targetRGB);
+		rgba.rgb = Convert601to709(rgba).rgb;
+		targetRGB.rbg = Convert601to709(targetRGB).rgb;
 	}	
 
 	float4 shadowRGB = targetRGB * targetRGB;
@@ -92,7 +97,7 @@ float4 PSColorMaskRGBA(VertDataOut v_in) : TARGET
 			abs(shadowRGB.g - rgba.g) <= Tolerance &&
 			abs(shadowRGB.b - rgba.b) <= Tolerance))
 	{
-		rgba.rgba = 0;
+		rgba.rgba = float4(0,0,0,0);
 	}
 	return rgba;
 }
