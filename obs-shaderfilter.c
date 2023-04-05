@@ -87,6 +87,8 @@ struct effect_param_data {
 	gs_eparam_t *param;
 
 	gs_image_file_t *image;
+	gs_texrender_t *render;
+	obs_weak_source_t *source;
 
 	union {
 		long long i;
@@ -141,6 +143,7 @@ struct shader_filter_data {
 	bool use_sources; //consider using name instead, "source_name" or use annotation
 	bool use_shader_elapsed_time;
 	bool no_repeat;
+	bool rendering;
 
 	struct vec2 uv_offset;
 	struct vec2 uv_scale;
@@ -184,13 +187,23 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	for (size_t param_index = 0; param_index < param_count; param_index++) {
 		struct effect_param_data *param =
 			(filter->stored_param_list.array + param_index);
-		if (param->image != NULL) {
+		if (param->image) {
 			obs_enter_graphics();
 			gs_image_file_free(param->image);
 			obs_leave_graphics();
 
 			bfree(param->image);
 			param->image = NULL;
+		}
+		if (param->source) {
+			obs_weak_source_release(param->source);
+			param->source = NULL;
+		}
+		if (param->render) {
+			obs_enter_graphics();
+			gs_texrender_destroy(param->render);
+			obs_leave_graphics();
+			param->render = NULL;
 		}
 	}
 
@@ -363,6 +376,29 @@ static void *shader_filter_create(obs_data_t *settings, obs_source_t *source)
 static void shader_filter_destroy(void *data)
 {
 	struct shader_filter_data *filter = data;
+	size_t param_count = filter->stored_param_list.num;
+	for (size_t param_index = 0; param_index < param_count; param_index++) {
+		struct effect_param_data *param =
+			(filter->stored_param_list.array + param_index);
+		if (param->image) {
+			obs_enter_graphics();
+			gs_image_file_free(param->image);
+			obs_leave_graphics();
+
+			bfree(param->image);
+			param->image = NULL;
+		}
+		if (param->source) {
+			obs_weak_source_release(param->source);
+			param->source = NULL;
+		}
+		if (param->render) {
+			obs_enter_graphics();
+			gs_texrender_destroy(param->render);
+			obs_leave_graphics();
+			param->render = NULL;
+		}
+	}
 
 	obs_enter_graphics();
 	if (filter->effect)
@@ -460,6 +496,14 @@ static bool shader_filter_reload_effect_clicked(obs_properties_t *props,
 	return false;
 }
 
+static bool add_source_to_list(void *data, obs_source_t *source)
+{
+	obs_property_t *p = data;
+	const char *name = obs_source_get_name(source);
+	obs_property_list_add_string(p, name, name);
+	return true;
+}
+
 static const char *shader_filter_texture_file_filter =
 	"Textures (*.bmp *.tga *.png *.jpeg *.jpg *.gif);;";
 
@@ -532,6 +576,7 @@ static obs_properties_t *shader_filter_properties(void *data)
 		//gs_eparam_t *annot = gs_param_get_annotation_by_idx(param->param, param_index);
 		const char *param_name = param->name.array;
 		struct dstr display_name = {0};
+		struct dstr sources_name = {0};
 		dstr_ncat(&display_name, param_name, param->name.len);
 		dstr_replace(&display_name, "_", " ");
 
@@ -574,6 +619,16 @@ static obs_properties_t *shader_filter_properties(void *data)
 						       display_name.array);
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
+			dstr_init_copy_dstr(&sources_name, &param->name);
+			dstr_cat(&sources_name, "_source");
+			obs_property_t *p = obs_properties_add_list(
+				props, sources_name.array, display_name.array,
+				OBS_COMBO_TYPE_EDITABLE,
+				OBS_COMBO_FORMAT_STRING);
+			dstr_free(&sources_name);
+			obs_property_list_add_string(p, "", "");
+			obs_enum_sources(add_source_to_list, p);
+			obs_enum_scenes(add_source_to_list, p);
 			obs_properties_add_path(
 				props, param_name, display_name.array,
 				OBS_PATH_FILE,
@@ -625,6 +680,8 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 		//gs_eparam_t *annot = gs_param_get_annotation_by_idx(param->param, param_index);
 		const char *param_name = param->name.array;
 		struct dstr display_name = {0};
+		struct dstr sources_name = {0};
+		obs_source_t *source = NULL;
 		dstr_ncat(&display_name, param_name, param->name.len);
 		dstr_replace(&display_name, "_", " ");
 
@@ -670,21 +727,43 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			param->value.i = obs_data_get_int(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
-			if (param->image == NULL) {
-				param->image = bzalloc(sizeof(gs_image_file_t));
+			dstr_init_copy_dstr(&sources_name, &param->name);
+			dstr_cat(&sources_name, "_source");
+			const char *sn = obs_data_get_string(
+				settings, sources_name.array);
+			dstr_free(&sources_name);
+			source = (sn && strlen(sn)) ? obs_get_source_by_name(sn)
+						    : NULL;
+			if (source) {
+				obs_weak_source_release(param->source);
+				param->source =
+					obs_source_get_weak_source(source);
+				obs_source_release(source);
+				if (param->image) {
+					gs_image_file_free(param->image);
+					param->image = NULL;
+				}
 			} else {
+				if (param->image == NULL) {
+					param->image = bzalloc(
+						sizeof(gs_image_file_t));
+				} else {
+					obs_enter_graphics();
+					gs_image_file_free(param->image);
+					obs_leave_graphics();
+				}
+
+				gs_image_file_init(
+					param->image,
+					obs_data_get_string(settings,
+							    param_name));
+
 				obs_enter_graphics();
-				gs_image_file_free(param->image);
+				gs_image_file_init_texture(param->image);
 				obs_leave_graphics();
+				obs_weak_source_release(param->source);
+				param->source = NULL;
 			}
-
-			gs_image_file_init(param->image,
-					   obs_data_get_string(settings,
-							       param_name));
-
-			obs_enter_graphics();
-			gs_image_file_init_texture(param->image);
-			obs_leave_graphics();
 			break;
 		case GS_SHADER_PARAM_STRING:
 			if (gs_effect_get_default_val(param->param) != NULL)
@@ -753,7 +832,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 
 	struct shader_filter_data *filter = data;
 
-	if (filter->effect == NULL) {
+	if (filter->effect == NULL || filter->rendering) {
 		obs_source_skip_video_filter(filter->context);
 		return;
 	}
@@ -761,6 +840,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 					     OBS_NO_DIRECT_RENDERING)) {
 		return;
 	}
+	filter->rendering = true;
 	if (filter->param_uv_scale != NULL) {
 		gs_effect_set_vec2(filter->param_uv_scale, &filter->uv_scale);
 	}
@@ -808,6 +888,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 		struct effect_param_data *param =
 			(filter->stored_param_list.array + param_index);
 		struct vec4 color;
+		obs_source_t *source = NULL;
 		//void *defvalue = gs_effect_get_default_val(param->param);
 		//float tempfloat;
 
@@ -827,9 +908,75 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 			gs_effect_set_vec4(param->param, &color);
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
-			gs_effect_set_texture(
-				param->param,
-				(param->image ? param->image->texture : NULL));
+			source = obs_weak_source_get_source(param->source);
+			if (source) {
+				const enum gs_color_space preferred_spaces[] = {
+					GS_CS_SRGB,
+					GS_CS_SRGB_16F,
+					GS_CS_709_EXTENDED,
+				};
+				const enum gs_color_space space =
+					obs_source_get_color_space(
+						source,
+						OBS_COUNTOF(preferred_spaces),
+						preferred_spaces);
+				const enum gs_color_format format =
+					gs_get_format_from_space(space);
+				if (!param->render ||
+				    gs_texrender_get_format(param->render) !=
+					    format) {
+					gs_texrender_destroy(param->render);
+					param->render = gs_texrender_create(
+						format, GS_ZS_NONE);
+				} else {
+					gs_texrender_reset(param->render);
+				}
+				uint32_t base_width =
+					obs_source_get_base_width(source);
+				uint32_t base_height =
+					obs_source_get_base_height(source);
+				gs_blend_state_push();
+				gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
+				if (gs_texrender_begin_with_color_space(
+					    param->render, base_width,
+					    base_height, space)) {
+					const float w = (float)base_width;
+					const float h = (float)base_height;
+					uint32_t flags =
+						obs_source_get_output_flags(
+							source);
+					const bool custom_draw =
+						(flags &
+						 OBS_SOURCE_CUSTOM_DRAW) != 0;
+					const bool async =
+						(flags & OBS_SOURCE_ASYNC) != 0;
+					struct vec4 clear_color;
+
+					vec4_zero(&clear_color);
+					gs_clear(GS_CLEAR_COLOR, &clear_color,
+						 0.0f, 0);
+					gs_ortho(0.0f, w, 0.0f, h, -100.0f,
+						 100.0f);
+
+					if (!custom_draw && !async)
+						obs_source_default_render(
+							source);
+					else
+						obs_source_video_render(source);
+					gs_texrender_end(param->render);
+				}
+				gs_blend_state_pop();
+				obs_source_release(source);
+				gs_texture_t *tex =
+					gs_texrender_get_texture(param->render);
+				gs_effect_set_texture(param->param, tex);
+			} else if (param->image) {
+				gs_effect_set_texture(param->param,
+						      param->image->texture);
+			} else {
+				gs_effect_set_texture(param->param, NULL);
+			}
+
 			break;
 		case GS_SHADER_PARAM_STRING:
 			gs_effect_set_val(param->param,
@@ -845,6 +992,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	obs_source_process_filter_end(filter->context, filter->effect,
 				      filter->total_width,
 				      filter->total_height);
+	filter->rendering = false;
 }
 static uint32_t shader_filter_getwidth(void *data)
 {
@@ -872,6 +1020,7 @@ struct obs_source_info shader_filter = {.id = "shader_filter",
 					.create = shader_filter_create,
 					.destroy = shader_filter_destroy,
 					.update = shader_filter_update,
+					.load = shader_filter_update,
 					.video_tick = shader_filter_tick,
 					.get_name = shader_filter_get_name,
 					.get_defaults = shader_filter_defaults,
