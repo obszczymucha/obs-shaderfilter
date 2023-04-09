@@ -7,12 +7,12 @@ their own shaders to OBS sources. This theoretically makes possible some simple 
 that can be implemented strictly in shader code. 
 
 Please note that this plugin may expose a reasonable number of bugs in OBS, as it uses the shader parser and 
-the property system in somewhat unusual ways. It should be considered to be in a prerelease state at this time.
+the property system in somewhat unusual ways.
 
 ## Installation
 
 The binary package mirrors the structure of the OBS Studio installation directory, so you should be able to
-just drop its contents alongside an OBS Studio install (usually at C:\Program Files (x86)\obs-studio\). The 
+just drop its contents alongside an OBS Studio install (usually at C:\Program Files\obs-studio\). The 
 necessary files should look like this: 
 
     obs-studio
@@ -44,7 +44,8 @@ of the filter is "User-defined shader."
 
 Shaders can either be entered directly in a text box in the filter properties, or loaded from a file. To change 
 between the two modes, use the "Load shader text from file" toggle. If you are entering your shader text directly,
-note that you will need to use the "Reload effect" button to apply your changes. This can also be used to reload an external file if changes have been made. OBS shaders are written in HLSL.
+note that you will need to use the "Reload effect" button to apply your changes. This can also be used to reload an external file if changes have been made. 
+OBS shaders are written in OBS version of HLSL.
 
 The option is provided to render extra pixels on each side of the source. This is useful for effects like shadows
 that need to render outside the bounds of the original source. 
@@ -144,7 +145,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
   in the vertex shader will not affect the logical size of the source in OBS, and this may mean that pixels outside the source's
   bounds will get cut off by later filters in the filter chain.
 * *rainbow.shader*&mdash;Creates Rainbow effects, animated, rotating, horizontal or vertical. This is an expensive process and limiters
-  are implemented.[https://www.twitch.tv/videos/404349212](https://www.twitch.tv/videos/404349212) 
+  are implemented.
 * *rectangular_drop_shadow.shader*&mdash;A shader that renders an optimized drop shadow for sources that are opaque and rectangular. 
   Pixels inside the bounds of the input are treated as solid; pixels outside are treated as opaque. The complexity of the blur
   does not increase with its size, so you should be able to make your blur size as large as you like wtihout affecting
@@ -165,12 +166,11 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 * *spotlight.shader*&mdash;Creates a stationary or animated spotlight effect with color options, speed of animation and glitch
 * *shine.shader*&mdash;Add shine / glow to any element, use the transition luma wipes (obs-studio\plugins\obs-transitions\data\luma_wipes *SOME NEW WIPES INCLUDED IN THIS RELEASE ZIP*) or create your own, 
    also includes a glitch (using rand_f), hide/reveal, reverse and ease, start adjustment and stop adjustment
-   video explanation of usage [Twitch.tv/videos/396724980](https://www.twitch.tv/videos/396724980)
 * *vignetting.shader*&mdash;A shader that reduces opacity further from the center of the image. inner radius is the start and outer radius is the end.
     suggested default settings is opacity 0.5, innerRadius = 0.5, outerRadius = 1.2
 * *zoom_blur.shader*&mdash;A shader that creates a zoom with blur effect based on a number of samples and magnitude of each sample. It also includes
    an animation with or without easing and a glitch option. Set speed to zero to not use animation. Suggested values are 15 samples and 30-50 magnitude.
-* *other*&mdash; We have far too many shaders to list. Please check [Examples folder](https://github.com/Oncorporation/obs-shaderfilter/tree/master/data/examples)
+* *other*&mdash; We have far too many shaders to list. Please check [Examples folder](https://github.com/exeldro/obs-shaderfilter/tree/master/data/examples)
    or find me on discord, as I have many additional filters for fixing input problems. 
 
 ## Building
@@ -178,26 +178,18 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 If you wish to build the obs-shaderfilter plugin from source, you should just need [CMake](https://cmake.org/) 
 and the OBS Studio libraries and headers.
 
-* [obs-shaderfilter source repository](https://github.com/Oncorporation/obs-shaderfilter)
-* [OBS Studio source repository](https://github.com/jp9000/obs-studio)
+* [obs-shaderfilter source repository](https://github.com/exeldro/obs-shaderfilter)
+* [OBS Studio source repository](https://github.com/obsproject/obs-studio)
 
-I don't believe that the OBS project provides prebuilt libraries; you're probably going to have the best luck
-building your own OBS binaries from the source. Refer to the OBS repository for more information on that.
+1. In-tree build
+    - Build OBS Studio: https://obsproject.com/wiki/Install-Instructions
+    - Check out this repository to plugins/obs-shaderfilter
+    - Add `add_subdirectory(obs-shaderfilter)` to plugins/CMakeLists.txt
+    - Rebuild OBS Studio
 
-When building in CMake, the OBSSourcePath configuration value should refer to the libobs subfolder 
-in the OBS source release. The build pipeline will look for headers in this location, and for libraries
-in a "build" folder relative to that path (where the OBS build process puts them). 
-
-Installation logic is provided through CMake as well; you can set the CMAKE_INSTALL_PREFIX configuration value
-to choose the folder to which the files will be copied. You can also manually copy all files to the locations
-described above.
-
-## License
-
-This project is licensed under the "[Unlicense](http://unlicense.org/)", because copy[right|left] is a hideous
-mess to deal with and I don't like it. 
+1. Stand-alone build (Linux only)
+    - Verify that you have package with development files for OBS
+    - Check out this repository and run `cmake -S . -B build -DBUILD_OUT_OF_TREE=On && cmake --build build`
 
 ## Donations
-
-I appreciate donations/follows/subs on twitch.tv/surn , [Bitcoin](bitcoin:3HAN6eVxv81URgj51wxeCd9eMhg3tvriro) or [LiteCoin](litecoin:MQFVTFCZUtcucZJzQCyiSDTirrWGqTyCjM).
-Why Crypto? We do not have free speech when we live in fear of everything being taken away on an authoritarian whim, a criminal plot or an outraged mob?
+https://www.paypal.me/exeldro
