@@ -216,6 +216,7 @@ load_shader_from_file(const char *file_name) // add input of visited files
 				load_shader_from_file(abs_include_path);
 			dstr_cat(&shader_file, file_contents);
 			dstr_cat(&shader_file, "\n");
+			bfree(abs_include_path);
 			bfree(file_contents);
 			dstr_free(&include_path);
 		} else {
