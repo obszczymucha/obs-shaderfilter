@@ -7,12 +7,14 @@
 
 #include <util/base.h>
 #include <util/dstr.h>
+#include <util/darray.h>
 #include <util/platform.h>
 
 #include <float.h>
 #include <limits.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 #include <util/threading.h>
 
@@ -21,41 +23,41 @@
 #define nullptr ((void*)0)
 
 static const char *effect_template_begin =
-"\
-uniform float4x4 ViewProj;\
-uniform texture2d image;\
-\
-uniform float2 uv_offset;\
-uniform float2 uv_scale;\
-uniform float2 uv_pixel_interval;\
-uniform float2 uv_size;\
-uniform float rand_f;\
-uniform float rand_instance_f;\
-uniform float rand_activation_f;\
-uniform float elapsed_time;\
-uniform int loops;\
-uniform float local_time;\
-\
-sampler_state textureSampler{\
-	Filter = Linear;\
-	AddressU = Border;\
-	AddressV = Border;\
-	BorderColor = 00000000;\
-};\
-\
-struct VertData {\
-	float4 pos : POSITION;\
-	float2 uv : TEXCOORD0;\
-};\
-\
-VertData mainTransform(VertData v_in)\
-{\
-	VertData vert_out;\
-	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);\
-	vert_out.uv = v_in.uv * uv_scale + uv_offset;\
-	return vert_out;\
-}\
-\
+"\r\
+uniform float4x4 ViewProj;\r\
+uniform texture2d image;\r\
+\r\
+uniform float2 uv_offset;\r\
+uniform float2 uv_scale;\r\
+uniform float2 uv_pixel_interval;\r\
+uniform float2 uv_size;\r\
+uniform float rand_f;\r\
+uniform float rand_instance_f;\r\
+uniform float rand_activation_f;\r\
+uniform float elapsed_time;\r\
+uniform int loops;\r\
+uniform float local_time;\r\
+\r\
+sampler_state textureSampler{\r\
+	Filter = Linear;\r\
+	AddressU = Border;\r\
+	AddressV = Border;\r\
+	BorderColor = 00000000;\r\
+};\r\
+\r\
+struct VertData {\r\
+	float4 pos : POSITION;\r\
+	float2 uv : TEXCOORD0;\r\
+};\r\
+\r\
+VertData mainTransform(VertData v_in)\r\
+{\r\
+	VertData vert_out;\r\
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);\r\
+	vert_out.uv = v_in.uv * uv_scale + uv_offset;\r\
+	return vert_out;\r\
+}\r\
+\r\
 ";
 
 static const char *effect_template_default_image_shader =
@@ -67,14 +69,14 @@ float4 mainImage(VertData v_in) : TARGET\r\
 ";
 
 static const char *effect_template_end =
-"\
-technique Draw\
-{\
-	pass\
-	{\
-		vertex_shader = mainTransform(v_in);\
-		pixel_shader = mainImage(v_in);\
-	}\
+"\r\
+technique Draw\r\
+{\r\
+	pass\r\
+	{\r\
+		vertex_shader = mainTransform(v_in);\r\
+		pixel_shader = mainImage(v_in);\r\
+	}\r\
 }";
 
 /* clang-format on */
@@ -82,7 +84,11 @@ technique Draw\
 struct effect_param_data {
 	struct dstr name;
 	struct dstr display_name;
+	struct dstr widget_type;
 	struct dstr description;
+	DARRAY(int) option_values;
+	DARRAY(struct dstr) option_labels;
+
 	enum gs_shader_param_type type;
 	gs_eparam_t *param;
 
@@ -95,6 +101,7 @@ struct effect_param_data {
 		double f;
 		char *string;
 	} value;
+	char *label;
 	union {
 		long long i;
 		double f;
@@ -177,12 +184,67 @@ static unsigned int rand_interval(unsigned int min, unsigned int max)
 	return min + (r / buckets);
 }
 
-static void shader_filter_reload_effect(struct shader_filter_data *filter)
+static char *
+load_shader_from_file(const char *file_name) // add input of visited files
 {
-	obs_data_t *settings = obs_source_get_settings(filter->context);
 
-	// First, clean up the old effect and all references to it.
-	filter->shader_start_time = 0.0;
+	char *file_ptr = os_quick_read_utf8_file(file_name);
+	if (file_ptr == NULL)
+		return NULL;
+	char *file = bstrdup(os_quick_read_utf8_file(file_name));
+	char **lines = strlist_split(file, '\n', true);
+	struct dstr shader_file;
+	dstr_init(&shader_file);
+
+	size_t line_i = 0;
+	while (lines[line_i] != NULL) {
+		char *line = lines[line_i];
+		line_i++;
+		if (strncmp(line, "#include", 8) == 0) {
+			// Open the included file, place contents here.
+			char *pos = strrchr(file_name, '/');
+			const size_t length = pos - file_name + 1;
+			struct dstr include_path = {0};
+			dstr_ncopy(&include_path, file_name, length);
+			char *start = strchr(line, '"') + 1;
+			char *end = strrchr(line, '"');
+
+			dstr_ncat(&include_path, start, end - start);
+			char *abs_include_path =
+				os_get_abs_path_ptr(include_path.array);
+			char *file_contents =
+				load_shader_from_file(abs_include_path);
+			dstr_cat(&shader_file, file_contents);
+			dstr_cat(&shader_file, "\n");
+			bfree(file_contents);
+			dstr_free(&include_path);
+		} else {
+			// else place current line here.
+			dstr_cat(&shader_file, line);
+			dstr_cat(&shader_file, "\n");
+		}
+	}
+
+	// Add file_name to visited files
+	// Do stuff with the file, and populate shader_file
+	/*
+
+		for line in file:
+		   if line starts with #include
+		       get path
+		       if path is not in visited files
+			   include_file_contents = load_shader_from_file(path)
+	                   concat include_file_contents onto shader_file
+	           else
+		       concat line onto shader_file
+	*/
+	bfree(file);
+	strlist_free(lines);
+	return shader_file.array;
+}
+
+static void shader_filter_clear_params(struct shader_filter_data *filter)
+{
 	size_t param_count = filter->stored_param_list.num;
 	for (size_t param_index = 0; param_index < param_count; param_index++) {
 		struct effect_param_data *param =
@@ -205,9 +267,27 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 			obs_leave_graphics();
 			param->render = NULL;
 		}
+		dstr_free(&param->name);
+		dstr_free(&param->display_name);
+		dstr_free(&param->widget_type);
+		dstr_free(&param->description);
+		da_free(param->option_values);
+		for (size_t i = 0; i < param->option_labels.num; i++) {
+			dstr_free(&param->option_labels.array[i]);
+		}
+		da_free(param->option_labels);
 	}
 
 	da_free(filter->stored_param_list);
+}
+
+static void shader_filter_reload_effect(struct shader_filter_data *filter)
+{
+	obs_data_t *settings = obs_source_get_settings(filter->context);
+
+	// First, clean up the old effect and all references to it.
+	filter->shader_start_time = 0.0;
+	shader_filter_clear_params(filter);
 
 	filter->param_elapsed_time = NULL;
 	filter->param_uv_offset = NULL;
@@ -235,7 +315,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	if (obs_data_get_bool(settings, "from_file")) {
 		const char *file_name =
 			obs_data_get_string(settings, "shader_file_name");
-		shader_text = os_quick_read_utf8_file(file_name);
+		shader_text = load_shader_from_file(file_name);
 	} else {
 		shader_text =
 			bstrdup(obs_data_get_string(settings, "shader_text"));
@@ -318,6 +398,8 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 			dstr_copy(&cached_data->name, info.name);
 			cached_data->type = info.type;
 			cached_data->param = param;
+			da_init(cached_data->option_values);
+			da_init(cached_data->option_labels);
 			const size_t annotation_count =
 				gs_param_get_num_annotations(param);
 			for (size_t annotation_index = 0;
@@ -334,6 +416,85 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 						(const char *)
 							gs_effect_get_default_val(
 								annotation));
+				} else if (strcmp(info.name, "label") == 0 &&
+					   info.type ==
+						   GS_SHADER_PARAM_STRING) {
+					dstr_copy(
+						&cached_data->display_name,
+						(const char *)
+							gs_effect_get_default_val(
+								annotation));
+				} else if (strcmp(info.name, "widget_type") ==
+						   0 &&
+					   info.type ==
+						   GS_SHADER_PARAM_STRING) {
+					dstr_copy(
+						&cached_data->widget_type,
+						(const char *)
+							gs_effect_get_default_val(
+								annotation));
+				} else if (strcmp(info.name, "minimum") == 0) {
+					if (info.type ==
+					    GS_SHADER_PARAM_FLOAT) {
+						cached_data->minimum.f =
+							*(float *)gs_effect_get_default_val(
+								annotation);
+					} else if (info.type ==
+						   GS_SHADER_PARAM_INT) {
+						cached_data->minimum.i =
+							*(int *)gs_effect_get_default_val(
+								annotation);
+					}
+				} else if (strcmp(info.name, "maximum") == 0) {
+					if (info.type ==
+					    GS_SHADER_PARAM_FLOAT) {
+						cached_data->maximum.f =
+							*(float *)gs_effect_get_default_val(
+								annotation);
+					} else if (info.type ==
+						   GS_SHADER_PARAM_INT) {
+						cached_data->maximum.i =
+							*(int *)gs_effect_get_default_val(
+								annotation);
+					}
+				} else if (strcmp(info.name, "step") == 0) {
+					if (info.type ==
+					    GS_SHADER_PARAM_FLOAT) {
+						cached_data->step.f =
+							*(float *)gs_effect_get_default_val(
+								annotation);
+					} else if (info.type ==
+						   GS_SHADER_PARAM_INT) {
+						cached_data->step.i =
+							*(int *)gs_effect_get_default_val(
+								annotation);
+					}
+				} else if (strncmp(info.name, "option_", 7) ==
+					   0) {
+					int id = atoi(info.name + 7);
+					if (info.type == GS_SHADER_PARAM_INT) {
+						int val =
+							*(int *)gs_effect_get_default_val(
+								annotation);
+						int *cd = da_insert_new(
+							cached_data
+								->option_values,
+							id);
+						*cd = val;
+
+					} else if (info.type ==
+						   GS_SHADER_PARAM_STRING) {
+						struct dstr val = {0};
+						dstr_copy(
+							&val,
+							(const char *)gs_effect_get_default_val(
+								annotation));
+						struct dstr *cs = da_insert_new(
+							cached_data
+								->option_labels,
+							id);
+						*cs = val;
+					}
 				}
 			}
 		}
@@ -376,29 +537,7 @@ static void *shader_filter_create(obs_data_t *settings, obs_source_t *source)
 static void shader_filter_destroy(void *data)
 {
 	struct shader_filter_data *filter = data;
-	size_t param_count = filter->stored_param_list.num;
-	for (size_t param_index = 0; param_index < param_count; param_index++) {
-		struct effect_param_data *param =
-			(filter->stored_param_list.array + param_index);
-		if (param->image) {
-			obs_enter_graphics();
-			gs_image_file_free(param->image);
-			obs_leave_graphics();
-
-			bfree(param->image);
-			param->image = NULL;
-		}
-		if (param->source) {
-			obs_weak_source_release(param->source);
-			param->source = NULL;
-		}
-		if (param->render) {
-			obs_enter_graphics();
-			gs_texrender_destroy(param->render);
-			obs_leave_graphics();
-			param->render = NULL;
-		}
-	}
+	shader_filter_clear_params(filter);
 
 	obs_enter_graphics();
 	if (filter->effect)
@@ -575,42 +714,86 @@ static obs_properties_t *shader_filter_properties(void *data)
 			(filter->stored_param_list.array + param_index);
 		//gs_eparam_t *annot = gs_param_get_annotation_by_idx(param->param, param_index);
 		const char *param_name = param->name.array;
+		const char *label = param->display_name.array;
+		const char *widget_type = param->widget_type.array;
+		const int *options = param->option_values.array;
+		const struct dstr *option_labels = param->option_labels.array;
+
 		struct dstr display_name = {0};
 		struct dstr sources_name = {0};
-		dstr_ncat(&display_name, param_name, param->name.len);
-		dstr_replace(&display_name, "_", " ");
+
+		if (label == NULL) {
+			dstr_ncat(&display_name, param_name, param->name.len);
+			dstr_replace(&display_name, "_", " ");
+		} else {
+			dstr_ncat(&display_name, label,
+				  param->display_name.len);
+		}
 
 		switch (param->type) {
 		case GS_SHADER_PARAM_BOOL:
 			obs_properties_add_bool(props, param_name,
 						display_name.array);
 			break;
-		case GS_SHADER_PARAM_FLOAT:
+		case GS_SHADER_PARAM_FLOAT: {
+			double range_min = param->minimum.f;
+			double range_max = param->maximum.f;
+			double step = param->step.f;
+			if (range_min == range_max) {
+				range_min = -1000.0;
+				range_max = 1000.0;
+				step = 0.0001;
+			}
 			obs_properties_remove_by_name(props, param_name);
-			if (!filter->use_sliders) {
-
-				obs_properties_add_float(props, param_name,
-							 display_name.array,
-							 -FLT_MAX, FLT_MAX,
-							 0.000001);
-			} else {
+			if (widget_type != NULL &&
+			    strcmp(widget_type, "slider") == 0) {
 				obs_properties_add_float_slider(
 					props, param_name, display_name.array,
-					-1000.0, 1000, 0.000001);
+					range_min, range_max, step);
+			} else {
+				obs_properties_add_float(props, param_name,
+							 display_name.array,
+							 range_min, range_max,
+							 step);
 			}
 			break;
-		case GS_SHADER_PARAM_INT:
+		}
+		case GS_SHADER_PARAM_INT: {
+			int range_min = (int)param->minimum.i;
+			int range_max = (int)param->maximum.i;
+			int step = (int)param->step.i;
+			if (range_min == range_max) {
+				range_min = -1000;
+				range_max = 1000;
+				step = 1;
+			}
 			obs_properties_remove_by_name(props, param_name);
-			if (!filter->use_sliders) {
-				obs_properties_add_int(props, param_name,
-						       display_name.array,
-						       INT_MIN, INT_MAX, 1);
-			} else {
+
+			if (widget_type != NULL &&
+			    strcmp(widget_type, "slider") == 0) {
 				obs_properties_add_int_slider(
 					props, param_name, display_name.array,
-					-1000, 1000, 1);
+					range_min, range_max, step);
+			} else if (widget_type != NULL &&
+				   strcmp(widget_type, "select") == 0) {
+				obs_property_t *plist = obs_properties_add_list(
+					props, param_name, display_name.array,
+					OBS_COMBO_TYPE_LIST,
+					OBS_COMBO_FORMAT_INT);
+				for (size_t i = 0; i < param->option_values.num;
+				     i++) {
+					obs_property_list_add_int(
+						plist, option_labels[i].array,
+						options[i]);
+				}
+			} else {
+				obs_properties_add_int(props, param_name,
+						       display_name.array,
+						       range_min, range_max,
+						       step);
 			}
 			break;
+		}
 		case GS_SHADER_PARAM_INT3:
 
 			break;
@@ -635,9 +818,16 @@ static obs_properties_t *shader_filter_properties(void *data)
 				shader_filter_texture_file_filter, NULL);
 			break;
 		case GS_SHADER_PARAM_STRING:
-			obs_properties_add_text(props, param_name,
-						display_name.array,
-						OBS_TEXT_MULTILINE);
+			if (widget_type != NULL &&
+			    strcmp(widget_type, "info") == 0) {
+				obs_properties_add_text(props, param_name,
+							display_name.array,
+							OBS_TEXT_INFO);
+			} else {
+				obs_properties_add_text(props, param_name,
+							display_name.array,
+							OBS_TEXT_MULTILINE);
+			}
 			break;
 		default:;
 		}
