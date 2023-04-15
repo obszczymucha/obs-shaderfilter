@@ -1,11 +1,52 @@
-uniform float Directions = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
-uniform float Quality = 4.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
-uniform float Size = 8.0; // BLUR SIZE (Radius)
-uniform float Mask_Left = 1.0;
-uniform float Mask_Right = 1.0;
-uniform float Mask_Top = 1.0;
-uniform float Mask_Bottom = 1.0;
-uniform float Mask_Bottom = 1.0;
+uniform float Directions<
+    string label = "Directions (16.0)";
+    string widget_type = "slider";
+    float minimum = 1.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+uniform float Quality<
+    string label = "Quality (4.0)";
+    string widget_type = "slider";
+    float minimum = 1.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 4.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
+uniform float Size<
+    string label = "Size (8.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 8.0; // BLUR SIZE (Radius)
+uniform float Mask_Left<
+    string label = "Mask left (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Mask_Right<
+    string label = "Mask right (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Mask_Top<
+    string label = "Mask top (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Mask_Bottom<
+    string label = "Mask bottom (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
 
 float4 mainImage(VertData v_in) : TARGET
 {
