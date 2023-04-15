@@ -1,14 +1,49 @@
 //based on https://www.shadertoy.com/view/Ms3XWH converted by Exeldro  v 1.0
 //updated by Charles 'Surn' Fettinger for obs-shaderfilter 9/2020
 //Converted to OpenGL by Exeldro February 19, 2022
-uniform float range = 0.05;
-uniform float noiseQuality = 250.0;
-uniform float noiseIntensity = 0.88;
-uniform float offsetIntensity = 0.02;
-uniform float colorOffsetIntensity = 1.3;
-uniform float lumaMin = 0.01;
-uniform float lumaMinSmooth = 0.04;
-uniform float Alpha_Percentage = 100; //<Range(0.0,100.0)>
+//Use improved input fields by Exeldro April 15, 2023
+uniform float range<
+    string label = "Wave size (0.05)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 0.20;
+    float step = 0.01;
+> = 0.05;
+uniform float offsetIntensity<
+    string label = "Offset intensity (0.02)";
+    string widget_type = "slider";
+    float minimum = 0.01;
+    float maximum = 0.20;
+    float step = 0.01;
+> = 0.02;
+uniform int noiseQuality<
+    string label = "Noise number of lines (250)";
+    string widget_type = "slider";
+    int minimum = 1.0;
+    float maximum = 1000.0;
+    float step = 10.0;
+> = 250.0;
+uniform float noiseIntensity<
+    string label = "Noise intensity (0.88)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 0.88;
+uniform float colorOffsetIntensity<
+    string label = "Color offset intensity (1.3)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.1;
+> = 1.3;
+uniform float Alpha_Percentage<
+    string label = "Aplha percentage (100.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 100.0; 
 uniform bool Apply_To_Image;
 uniform bool Replace_Image_Color;
 uniform float4 Color_To_Replace;
@@ -61,11 +96,12 @@ float4 mainImage(VertData v_in) : TARGET
     float2 offsetR = float2(0.006 * sin(elapsed_time), 0.0) * colorOffsetIntensity;
     float2 offsetG = float2(0.0073 * (cos(elapsed_time * 0.97)), 0.0) * colorOffsetIntensity;
 
+    float4 rgba = image.Sample(textureSampler, uv);
     float r = image.Sample(textureSampler, uv + offsetR).r;
     float g = image.Sample(textureSampler, uv + offsetG).g;
-    float b = image.Sample(textureSampler, uv).b;
+    float b = rgba.b;
 
-    float4 rgba = float4(r, g, b, 1.0);
+    rgba = float4(r, g, b, rgba.a);
     
     float4 color;
     float4 original_color;
