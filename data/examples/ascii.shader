@@ -12,11 +12,30 @@
 // Add Additional Characters with this tool: http://thrill-project.com/archiv/coding/bitmap/
 // converts a bitmap into int then decodes it to look like text
 
-uniform int        scale = 1; // Size of characters
-uniform float4     base_color = {0.0,1.0,0.0,1.0}; // Monochrome base color
-uniform bool       monochrome = false;
-uniform int        character_set = 0;
-uniform string     note = "base_color is used as monochrome base color.\ncharacter_set can be:\n 0: Large set of non-letters\n 1: Small set of capital letters";
+uniform int scale<
+    string label = "Scale";
+    string widget_type = "slider";
+    int minimum = 1;
+    int maximum = 20;
+    int step = 1;
+> = 1; // Size of characters
+uniform float4 base_color<
+    string label = "Base color";
+> = {0.0,1.0,0.0,1.0}; // Monochrome base color
+uniform bool monochrome<
+    string label = "Monochrome";
+> = false;
+uniform int character_set<
+  string label = "Character set";
+  string widget_type = "select";
+  int    option_0_value = 0;
+  string option_0_label = "Large set of non-letters";
+  int    option_1_value = 1;
+  string option_1_label = "Small set of capital letters";
+> = 0;
+uniform string note<
+    string widget_type = "info";
+> = "Base color is used as monochrome base color.";
 
 float character(int n, float2 p)
 {
@@ -41,9 +60,9 @@ float4 mainImage( VertData v_in ) : TARGET
 {
     float2 iResolution = uv_size*uv_scale;
     float2 pix = v_in.pos.xy;
-    float4 color = image.Sample(textureSampler, floor(pix/(scale*8.0))*(scale*8.0)/iResolution.xy);
+    float4 c = image.Sample(textureSampler, floor(pix/(scale*8.0))*(scale*8.0)/iResolution.xy);
 
-    float gray = 0.3 * color.r + 0.59 * color.g + 0.11 * color.b;
+    float gray = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
 	
     int n;
     int charset = clamp(character_set, 0, 1);
@@ -73,9 +92,9 @@ float4 mainImage( VertData v_in ) : TARGET
 	
     if (monochrome)
     {
-        color.rgb = base_color.rgb;
+        c.rgb = base_color.rgb;
     }
-    color = color*character(n, p);
+    c = c*character(n, p);
     
-    return color;
+    return c;
 }
