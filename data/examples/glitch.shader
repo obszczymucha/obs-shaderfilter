@@ -1,7 +1,19 @@
 //based on https://www.shadertoy.com/view/MtXBDs
 //inputs
-uniform float AMT = 0.2; //0 - 1 glitch amount
-uniform float SPEED = 0.6; //0 - 1 speed
+uniform float AMT<
+    string label = "AMT";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.2; //0 - 1 glitch amount
+uniform float SPEED<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.6; //0 - 1 speed
 
 //2D (returns 0 - 1)
 float random2d(float2 n) { 

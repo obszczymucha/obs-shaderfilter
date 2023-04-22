@@ -25,41 +25,61 @@
 #define mat4 float4x4
 #define fract frac
 #define mix lerp
-//#define iTime float
 
-/*
-**Shaders have these variables pre loaded by the plugin**
-**this section can be deleted**
-
-uniform float4x4 ViewProj;
-uniform texture2d image;
-
-uniform float elapsed_time;
-uniform float2 uv_offset;
-uniform float2 uv_scale;
-uniform float2 uv_pixel_interval;
-uniform float2 uv_size;
-uniform float rand_f;
-uniform float rand_instance_f;
-uniform float rand_activation_f;
-uniform int loops;
-uniform float local_time;
-*/
-uniform int Alpha_Percentage = 90; //<Range(0.0,100.0)>
-uniform int Speed = 100;
-uniform int Flame_Size = 70;
-uniform int Fire_Type = 1;
+uniform int Alpha_Percentage<
+    string label = "Aplha Percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 90;
+uniform int Speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+> = 100;
+uniform int Flame_Size<
+    string label = "Flame Size";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+> = 70;
+uniform int Fire_Type<
+  string label = "Fire Type";
+  string widget_type = "select";
+  int    option_0_value = 0;
+  string option_0_label = "Smaller and more whisps";
+  int    option_1_value = 1;
+  string option_1_label = "Larger and more volume";
+> = 1;
 
 uniform bool Invert <
 	string name = "Invert";
 > = false;
-uniform float lumaMin = 0.01;
-uniform float lumaMinSmooth = 0.04;
+uniform float lumaMin<
+    string label = "Luma min";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.01;
+uniform float lumaMinSmooth<
+    string label = "Luma min smooth";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.04;
 uniform bool Apply_To_Image;
 uniform bool Replace_Image_Color;
 uniform bool Apply_To_Specific_Color;
 uniform float4 Color_To_Replace;
-uniform string Notes = "Luma cuts reveals background, flame size is percentage screen size, Alpha Percentage adjusts color";
+uniform string Notes<
+    string widget_type = "info";
+> = "Luma cuts reveals background, flame size is percentage screen size, Alpha Percentage adjusts color";
 
 vec3 rgb2hsv(vec3 c)
 {

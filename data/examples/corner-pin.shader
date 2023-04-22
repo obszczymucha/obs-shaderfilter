@@ -26,14 +26,62 @@
 
 uniform bool Antialias_Edges = true;
 
-uniform float Top_Left_X = -100.;
-uniform float Top_Left_Y = -100.;
-uniform float Top_Right_X = 100.;
-uniform float Top_Right_Y = -100.;
-uniform float Bottom_Left_X = -100.;
-uniform float Bottom_Left_Y = 100.;
-uniform float Bottom_Right_X = 100.;
-uniform float Bottom_Right_Y = 100.;
+uniform float Top_Left_X<
+    string label = "Top left x";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = -100.;
+uniform float Top_Left_Y<
+    string label = "Top left y";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = -100.;
+uniform float Top_Right_X<
+    string label = "Top right x";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100.;
+uniform float Top_Right_Y<
+    string label = "Top right y";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = -100.;
+uniform float Bottom_Left_X<
+    string label = "Bottom left x";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = -100.;
+uniform float Bottom_Left_Y<
+    string label = "Bottom left y";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100.;
+uniform float Bottom_Right_X<
+    string label = "Bottom right x";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100.;
+uniform float Bottom_Right_Y<
+    string label = "Bottom right y";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100.;
 
 // DEVELOPMENTAL DEBUGGING OPTIONS
 //uniform float AAstrength = 1.0;

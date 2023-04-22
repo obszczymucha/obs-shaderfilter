@@ -1,11 +1,43 @@
 //Converted to OpenGL by Exeldro February 21, 2022
-uniform int glow_percent = 10;
-uniform int blur = 1;
-uniform int min_brightness= 27;
-uniform int max_brightness = 100;
-uniform int pulse_speed = 0;
+uniform int glow_percent<
+    string label = "Glow percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 10;
+uniform int blur<
+    string label = "Blur";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 1;
+uniform int min_brightness<
+    string label = "Min brightness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 27;
+uniform int max_brightness<
+    string label = "Max brightness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 100;
+uniform int pulse_speed<
+    string label = "Pulse speed";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 0;
 uniform bool ease;
-uniform string notes = "'ease' - makes the animation pause at the begin and end for a moment,'glow_percent' - how much brightness to add (recommend 0-100). 'blur' - how far should the glow extend (recommend 1-4).'pulse_speed' - (0-100). 'min/max brightness' - floor and ceiling brightness level to target for glows.";
+uniform string notes<
+    string widget_type = "info";
+> = "'ease' - makes the animation pause at the begin and end for a moment,'glow_percent' - how much brightness to add (recommend 0-100). 'blur' - how far should the glow extend (recommend 1-4).'pulse_speed' - (0-100). 'min/max brightness' - floor and ceiling brightness level to target for glows.";
 
 
 float EaseInOutCircTimer(float t,float b,float c,float d){
@@ -30,14 +62,14 @@ float4 mainImage(VertData v_in) : TARGET
     offsets[3] = float2(0.1,  0.125);
 
 	// convert input for vector math
-	float4 color = image.Sample(textureSampler, v_in.uv);
+	float4 col = image.Sample(textureSampler, v_in.uv);
 	float blur_amount = float(blur) /100.0;
 	float glow_amount = float(glow_percent) * 0.01;
 	float speed = float(pulse_speed) * 0.01;	
 	float luminance_floor = float(min_brightness) /100.0;
 	float luminance_ceiling = float(max_brightness) /100.0;
 
-	if (color.a > 0.0)
+	if (col.a > 0.0)
 	{
 		//circular easing variable
 		float t = 1.0 + sin(elapsed_time * speed);
@@ -53,10 +85,10 @@ float4 mainImage(VertData v_in) : TARGET
 			if ((intensity >= luminance_floor) && (intensity <= luminance_ceiling))
 			{
 				ncolor.a = clamp(ncolor.a * glow_amount, 0.0, 1.0);
-				color += (ncolor * (glow_amount * b));
+				col += (ncolor * (glow_amount * b));
 			}
 		}
 	}
-	return color;
+	return col;
 
 }

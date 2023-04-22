@@ -2,13 +2,43 @@
 //https://github.com/Oncorporation/obs-shaderfilter
 //Converted to OpenGL by Q-mii & Exeldro February 25, 2022
 uniform float4 start_color = { 0.1, 0.3, 0.1, 1.0 };
-uniform float start_step = 0.15;
+uniform float start_step<
+    string label = "Start step";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.15;
 uniform float4 middle_color = { 1.0, 1.0, 1.0, 1.0 };
-uniform float middle_step = 0.4;
+uniform float middle_step<
+    string label = "Middle step";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.4;
 uniform float4 end_color = { 0.75, 0.75, 0.75, 1.0};
-uniform float end_step = 0.9;
-uniform int alpha_percent = 90;
-uniform int pulse_speed = 0;
+uniform float end_step<
+    string label = "End step";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.9;
+uniform int alpha_percent<
+    string label = "Alpha percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 90;
+uniform int pulse_speed<
+    string label = "Pulse speed";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 0;
 uniform bool ease;
 uniform bool rotate_colors;
 uniform bool Apply_To_Alpha_Layer = true;
@@ -16,9 +46,23 @@ uniform bool Apply_To_Specific_Color;
 uniform float4 Color_To_Replace;
 uniform bool horizontal;
 uniform bool vertical;
-uniform int gradient_center_width_percentage = 50;
-uniform int gradient_center_height_percentage = 50;
-uniform string notes = "gradient center items will change the center location. Pulse Speed greater than 0 will animate. Easing seem to be too fast.";
+uniform int gradient_center_width_percentage<
+    string label = "gradient center width percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform int gradient_center_height_percentage<
+    string label = "gradient center height percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform string notes<
+    string widget_type = "info";
+> = "gradient center items will change the center location. Pulse Speed greater than 0 will animate. Easing seem to be too fast.";
 
 float EaseInOutCircTimer(float t, float b, float c, float d) {
 	t /= d / 2;

@@ -1,10 +1,30 @@
 // Drop Shadow shader modified by Charles Fettinger 
 // impose a limiter to keep from crashing the system
 //Converted to OpenGL by Exeldro February 19, 2022
-uniform int shadow_offset_x = 5;
-uniform int shadow_offset_y = 5;
-uniform int shadow_blur_size = 3;
-uniform string notes = "blur size is limited to a max of 15 to ensure GPU";
+uniform int shadow_offset_x<
+    string label = "Shadow offset x";
+    string widget_type = "slider";
+    int minimum = -100;
+    int maximum = 100;
+    int step = 1;
+> = 5;
+uniform int shadow_offset_y<
+    string label = "Shadow offset y";
+    string widget_type = "slider";
+    int minimum = -100;
+    int maximum = 100;
+    int step = 1;
+> = 5;
+uniform int shadow_blur_size<
+    string label = "Shadow blur size";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 15;
+    int step = 1;
+> = 3;
+uniform string notes<
+    string widget_type = "info";
+> = "blur size is limited to a max of 15 to ensure GPU";
 
 uniform float4 shadow_color;
 

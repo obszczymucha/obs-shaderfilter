@@ -3,11 +3,25 @@
 // Modified by Charles Fettinger (https://github.com/Oncorporation)  10/2019
 //Converted to OpenGL by Q-mii & Exeldro February 18, 2022
 uniform texture2d iChannel0;
-uniform int speed_percentage = 5; //<Range(-10.0, 10.0)>
-uniform int alpha_percentage = 50; //<Range(0.0, 100.0)>
+uniform int speed_percentage<
+    string label = "Speed";
+    string widget_type = "slider";
+    int minimum = -10;
+    int maximum = 10;
+    int step = 1;
+> = 5;
+uniform int alpha_percentage<
+    string label = "Opacity Percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
 uniform bool Apply_To_Alpha_Layer = true;
 
-uniform string notes = "add rotation and speed";
+uniform string notes<
+    string widget_type = "info";
+> = "add rotation and speed";
 
 
 float2 cm(float2 a, float2 b) {

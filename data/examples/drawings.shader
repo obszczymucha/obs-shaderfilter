@@ -1,7 +1,19 @@
 //based on https://www.shadertoy.com/view/ldlcWs
 
-uniform int AngleNum = 3;
-uniform int SampNum = 9;
+uniform int AngleNum<
+    string label = "Number of angles";
+    string widget_type = "slider";
+    int minimum = 0.0;
+    int maximum = 25;
+    int step = 1;
+> = 3;
+uniform int SampNum<
+    string label = "Number of samples";
+    string widget_type = "slider";
+    int minimum = 0.0;
+    int maximum = 25;
+    int step = 1;
+> = 9;
 
 float4 getCol(float2 pos)
 {

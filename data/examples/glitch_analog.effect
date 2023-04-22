@@ -9,21 +9,77 @@ uniform float2 uv_pixel_interval;
 uniform float rand_f;
 uniform float2 uv_size;
 
-uniform float scan_line_jitter_displacement = 33; // (displacement, threshold)
-uniform int scan_line_jitter_threshold_percent = 95;
-uniform float vertical_jump_amount;
-uniform float vertical_speed;// (amount, speed)
-uniform float horizontal_shake;
-uniform float color_drift_amount;
-uniform float color_drift_speed;// (amount, speed)
-uniform int pulse_speed_percent = 0;
-uniform int alpha_percent = 100;
+uniform float scan_line_jitter_displacement<
+    string label = "Scan line jitter";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 33.0; // (displacement, threshold)
+uniform int scan_line_jitter_threshold_percent<
+    string label = "scan line jitter threshold percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 95;
+uniform float vertical_jump_amount<
+    string label = "Vertical jump amount";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+>;
+uniform float vertical_speed<
+    string label = "Vertical speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+>;// (amount, speed)
+uniform float horizontal_shake<
+    string label = "Horizontal shake";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+>;
+uniform float color_drift_amount<
+    string label = "Color drift amount";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+>;
+uniform float color_drift_speed<
+    string label = "Color drift speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+>;// (amount, speed)
+uniform int pulse_speed_percent<
+    string label = "Pulse speed percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 0;
+uniform int alpha_percent<
+    string label = "Aplha percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 100;
 uniform bool rotate_colors;
 uniform bool Apply_To_Alpha_Layer = false;
 uniform bool Replace_Image_Color;
 uniform bool Apply_To_Specific_Color;
 uniform float4 Color_To_Replace;
-uniform string notes = "play with settings!";
+uniform string notes<
+    string widget_type = "info";
+> = "play with settings!";
 
 sampler_state textureSampler {
 	Filter    = Point;

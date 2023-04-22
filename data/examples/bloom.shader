@@ -1,10 +1,30 @@
 // Bloom shader by Charles Fettinger for obs-shaderfilter plugin 3/2019
 //https://github.com/Oncorporation/obs-shaderfilter
 //Converted to OpenGL by Exeldro February 15, 2022
-uniform int Angle_Steps = 5; //<range 1 - 20>
-uniform int Radius_Steps = 9; //<range 0 - 20>
-uniform float ampFactor = 2.0;
-uniform string notes = "Steps limited in range from 0 to 20. Edit bloom.shader to remove limits at your own risk.";
+uniform int Angle_Steps<
+    string label = "Angle Steps";
+    string widget_type = "slider";
+    int minimum = 1;
+    int maximum = 20;
+    int step = 1;
+> = 5; //<range 1 - 20>
+uniform int Radius_Steps<
+    string label = "Radius Steps";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 20;
+    int step = 1;
+> = 9; //<range 0 - 20>
+uniform float ampFactor<
+    string label = "amp Factor";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 2.0;
+uniform string notes<
+    string widget_type = "info";
+> = "Steps limited in range from 0 to 20. Edit bloom.shader to remove limits at your own risk.";
 
 float4 mainImage(VertData v_in) : TARGET
 {

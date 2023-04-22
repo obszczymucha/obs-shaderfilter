@@ -1,12 +1,37 @@
 //Created by Radegast Stravinsky for obs-shaderfilter 9/2020
-uniform float radius = 0.0;
-uniform float magnitude = 0.0;
-uniform float center_x = 0.25;
-uniform float center_y = 0.25;
+uniform float radius<
+    string label = "Radius";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 0.0;
+uniform float magnitude<
+    string label = "Magnitude";
+    string widget_type = "slider";
+    float minimum = -1.3333;
+    float maximum = 1.3333;
+    float step = 0.01;
+> = 0.0;
+uniform float center_x<
+    string label = "Center x";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 0.5;
+    float step = 0.01;
+> = 0.25;
+uniform float center_y<
+    string label = "Center y";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 0.5;
+    float step = 0.01;
+> = 0.25;
 uniform bool animate = false;
 
-
-uniform string notes = "Distorts the screen, expanding or drawing in pixels around a point."
+uniform string notes<
+    string widget_type = "info";
+> = "Distorts the screen, expanding or drawing in pixels around a point."
 
 
 float4 mainImage(VertData v_in) : TARGET 

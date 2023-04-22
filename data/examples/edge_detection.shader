@@ -2,22 +2,36 @@
 // originally from Andersama (https://github.com/Andersama)
 // Modified and improved my Charles Fettinger (https://github.com/Oncorporation)  1/2019
 //Converted to OpenGL by Q-mii & Exeldro March 8, 2022
-uniform float sensitivity = 0.05;
+uniform float sensitivity<
+    string label = "Sensitivity";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.05;
 uniform bool invert_edge;
-uniform float4 edge_color;
+uniform float4 edge_color = {1.0,1.0,1.0,1.0};
 uniform bool edge_multiply;
-uniform float4 non_edge_color;
+uniform float4 non_edge_color = {0.0,0.0,0.0,0.0};
 uniform bool non_edge_multiply;
 uniform bool alpha_channel;
-uniform float alpha_level = 100;
+uniform float alpha_level<
+    string label = "Alpha level";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 100.0;
 uniform bool alpha_invert;
 uniform float rand_f;
 
-uniform string notes = "'sensativity' - 0.01 is max and will create the most edges. Increasing this value decreases the number of edges detected.  'edge non edge color' - the color to recolor vs the original image. 'edge or non edge multiply' - multiplies the color against the original color giving it a tint instead of replacing the color. White represents no tint. 'invert edge' - flips the sensativity and is great for testing and fine tuning. 'alpha channel' - use an alpha channel to replace original color with transparency. 'alpha_level' - transparency amount modifier where 1.0 = base luminance  (recommend 0.00 - 2.00). 'alpha_invert' - flip what is transparent from darks (default) to lights";
+uniform string notes<
+    string widget_type = "info";
+> = "'sensitivity' - 0.01 is max and will create the most edges. Increasing this value decreases the number of edges detected.  'edge non edge color' - the color to recolor vs the original image. 'edge or non edge multiply' - multiplies the color against the original color giving it a tint instead of replacing the color. White represents no tint. 'invert edge' - flips the sensativity and is great for testing and fine tuning. 'alpha channel' - use an alpha channel to replace original color with transparency. 'alpha_level' - transparency amount modifier where 1.0 = base luminance  (recommend 0.00 - 2.00). 'alpha_invert' - flip what is transparent from darks (default) to lights";
 
 float4 mainImage(VertData v_in) : TARGET
 {
-	float4 color = image.Sample(textureSampler, v_in.uv);
+	float4 c = image.Sample(textureSampler, v_in.uv);
 	
 	 float s = 3;
      float hstep = uv_pixel_interval.x;
@@ -49,12 +63,12 @@ float4 mainImage(VertData v_in) : TARGET
 	if(isEdge) {
 		col = edge_color;
 		if(edge_multiply){
-			col *= color;
+			col *= c;
 		}
 	} else {
 		col = non_edge_color;
 		if(non_edge_multiply){
-			col *= color;
+			col *= c;
 		}
 	}
 
@@ -64,11 +78,11 @@ float4 mainImage(VertData v_in) : TARGET
 
 	if(alpha_channel){
 		if (edge_multiply && isEdge) {
-			return clamp(lerp(color, col, alpha_level), 0.0, 1.0);
+			return clamp(lerp(c, col, alpha_level), 0.0, 1.0);
 		}
 		else {
 			// use max instead of multiply
-			return clamp(lerp(color, float4(max(color.r, col.r), max(color.g, col.g), max(color.b, col.b), 1.0), alpha_level), 0.0, 1.0);
+			return clamp(lerp(c, float4(max(c.r, col.r), max(c.g, col.g), max(c.b, col.b), 1.0), alpha_level), 0.0, 1.0);
 		}
 	} else {
 		// col.a = col.a * alpha_level;

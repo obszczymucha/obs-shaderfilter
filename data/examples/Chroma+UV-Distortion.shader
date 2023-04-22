@@ -1,11 +1,29 @@
 //based on https://www.shadertoy.com/view/WsdyRN
 
 //Higher values = less distortion
-uniform float distortion = 75.;
+uniform float distortion<
+    string label = "Distortion";
+    string widget_type = "slider";
+    float minimum = 5.0;
+    float maximum = 1000.0;
+    float step = 0.01;
+> = 75.;
 //Higher values = tighter distortion
-uniform float amplitude = 10.;
+uniform float amplitude<
+    string label = "Amplitude";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 10.;
 //Higher values = more color distortion
-uniform float chroma = .5;
+uniform float chroma<
+    string label = "Chroma";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 6.28318531;
+    float step = 0.01;
+> = .5;
 
 float2 zoomUv(float2 uv, float zoom) {
     float2 uv1 = uv;

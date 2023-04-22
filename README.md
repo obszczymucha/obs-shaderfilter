@@ -1,4 +1,4 @@
-# obs-shaderfilter 1.21
+# obs-shaderfilter
 
 ## Introduction
 
@@ -54,10 +54,44 @@ Normally, all that's required for OBS purposes is a pixel shader, so the plugin 
 standard template to add a basic vertex shader and other boilerplate. If you wish to customize the vertex shader
 or other parts of the effect for some reason, you can check the "Use Effect File (.effect)" option. 
 
+`Use Shader Time` Start the effect from the loadtime of the shader, not the start up time of OBS Studio.
+
 Any parameters you add to your shader (defined as `uniform` variables) will be detected by the plugin and exposed
 in the properties window to have their values set. Currently, only `int`, `float`, `bool`, `string`, `texture2d`, and `float4`
 parameters are supported. (`float4` parameters will be interpreted by the properties window as colors.) `string` is used for 
 notes and instructions, but could be used in an effect or shader. Variable names are displayed in the GUI with underscore replaced with space `uniform float Variable_Name` becomes `Variable Name`.
+
+Version 2.0 and up support setting, label, widget_type, minimum, maximum, step using annotations.
+A slider that has a minimum of -1.0, maximum of 1.0, and a step size of 0.01:
+```
+// Contrast from -1.0 to 1.0
+uniform float Contrast<
+  string label = "Contrast Adjustment";
+  string widget_type = "slider";
+  float minimum = -1.0;
+  float maximum = 1.0;
+  float step = 0.01;
+> = 0.0;
+```
+A drop-down select widget for integer fields:
+```
+uniform int SelectTest<
+  string label = "Int Select";
+  string widget_type = "select";
+  int    option_0_value = 0;
+  string option_0_label = "First";
+  int    option_1_value = 1;
+  string option_1_label = "Second";
+  int    option_2_value = 3;
+  string option_2_label = "Third";
+> = 3;
+```
+A text field the user can not edit:
+```
+uniform string notes<
+    string widget_type = "info";
+> = "add notes here";
+```
 
 #### Defaults
 
@@ -93,13 +127,6 @@ handle these variables being missing, but the shader may malfunction.)
   this to convert the UV coordinates of the pixel being processed to the coordinates of that texel in the source
   texture, or otherwise scale UV coordinate distances into texel distances.
 
-### New Options in version 1.1+
-* **`Use Slider Inputs`**&mdash; Converts Integer and floating point inputs into sliders in the UI.
-* **`Use Shader Time`**&mdash;Start the effect from the loadtime of the shader, not the start up time of OBS Studio.
-* **`Override Entire Effect`** renamed **`Use Effect File (.effect)`** in UI and documentation
-* Textures moved from the shaders folder to the textures folder. Existing textures are not deleted so as to not disrupt you current scenes.(1.2)
-* 1.21 minor bug fixes and shader/effect updates
-  
 ### Example shaders
 
 Several examples are provided in the plugin's *data/examples* folder. These can be used as-is for some hopefully

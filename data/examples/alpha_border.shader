@@ -1,6 +1,20 @@
-uniform float4 border_color;
-uniform int border_thickness;
-uniform float alpha_cut_off = 0.5;
+uniform float4 border_color<
+    string label = "Border color";
+> = {0.0,0.0,0.0,1.0};
+uniform int border_thickness<
+    string label = "Border thickness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 0;
+uniform float alpha_cut_off<
+    string label = "Alpha cut off";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.5;
 
 float4 mainImage(VertData v_in) : TARGET
 {

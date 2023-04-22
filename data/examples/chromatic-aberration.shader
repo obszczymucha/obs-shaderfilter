@@ -1,8 +1,26 @@
 //based on https://www.shadertoy.com/view/XssGz8
 //Converted to OpenGL by Exeldro February 14, 2022 + black background removed February 23, 2022
-uniform float power = 0.01;
-uniform float gamma = 2.2;
-uniform int num_iter = 7;
+uniform float power<
+    string label = "Power";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 0.01;
+uniform float gamma<
+    string label = "Gamma";
+    string widget_type = "slider";
+    float minimum = 0.01;
+    float maximum = 3.0;
+    float step = 0.01;
+> = 2.2;
+uniform int num_iter<
+    string label = "Number iterations";
+    string widget_type = "slider";
+    int minimum = 3;
+    int maximum = 25;
+    int step = 1;
+> = 7;
 uniform bool distort_radial = false;
 uniform bool distort_barrel = false;
 uniform bool offset_spectrum_ycgco = false;

@@ -1,9 +1,38 @@
-uniform int Strength = 1;
-uniform float Mask_Left = 1.0;
-uniform float Mask_Right = 1.0;
-uniform float Mask_Top = 1.0;
-uniform float Mask_Bottom = 1.0;
-uniform float Mask_Bottom = 1.0;
+uniform int Strength<
+    string label = "Strength (1)";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 25;
+    int step = 1;
+> = 1;
+uniform float Mask_Left<
+    string label = "Mask left (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Mask_Right<
+    string label = "Mask right (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Mask_Top<
+    string label = "Mask top (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Mask_Bottom<
+    string label = "Mask bottom (1.0)";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 1.0;
 
 float4 mainImage(VertData v_in) : TARGET
 {

@@ -39,7 +39,9 @@ uniform float rand_activation_f;
 uniform int loops;
 uniform float local_time;
 */
-uniform string notes = "add notes here";
+uniform string notes<
+    string widget_type = "info";
+> = "add notes here";
 
 
 float4 mainImage(VertData v_in) : TARGET

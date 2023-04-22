@@ -1,7 +1,31 @@
-uniform int center_x_percent = 50;
-uniform int center_y_percent = 50;
-uniform float power_x = 1.75;
-uniform float power_y = 1.75;
+uniform float center_x_percent<
+    string label = "Center x percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 50.0;
+uniform float center_y_percent<
+    string label = "Center x percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 50.0;
+uniform float power_x<
+    string label = "Power x";
+    string widget_type = "slider";
+    float minimum = -2.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 1.75;
+uniform float power_y<
+    string label = "Power y";
+    string widget_type = "slider";
+    float minimum = -2.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 1.75;
 
 float4 mainImage(VertData v_in) : TARGET
 {

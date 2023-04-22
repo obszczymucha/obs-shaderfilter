@@ -1,4 +1,10 @@
-uniform float speed = 0.5;
+uniform float speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 0.5;
 
 float4 mainImage(VertData v_in) : TARGET
 {

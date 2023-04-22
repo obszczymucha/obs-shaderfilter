@@ -1,14 +1,40 @@
 // Frosted Glass shader by Charles Fettinger for obs-shaderfilter plugin 4/2019
 //https://github.com/Oncorporation/obs-shaderfilter
 
-uniform float Alpha_Percent = 100.0;
-uniform float Amount = 0.03;
-uniform float Scale = 5.1;
+uniform float Alpha_Percent<
+    string label = "Alpha Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100.0;
+uniform float Amount<
+    string label = "Amount";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.03;
+uniform float Scale<
+    string label = "Scale";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 5.1;
 uniform bool Animate;
 uniform bool Horizontal_Border;
-uniform float Border_Offset = 1.1;
+uniform float Border_Offset<
+    string label = "Border Offset";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 1.1;
 uniform float4 Border_Color = {.8,.5,1.0,1.0};
-uniform string notes = "Change shader with Scale and Amount, move Border with Border Offset. Alpha is Opacity of overlay.";
+uniform string notes<
+    string widget_type = "info";
+> = "Change shader with Scale and Amount, move Border with Border Offset. Alpha is Opacity of overlay.";
 
 float rand(float2 co)
 {

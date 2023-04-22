@@ -1,14 +1,74 @@
-uniform float left_side_width = 0.1;
-uniform float left_side_size = 0.9;
-uniform float left_side_shadow = 0.8;
-uniform float left_flip_width = 0.05;
-uniform float left_flip_shadow = 0.6;
+uniform float left_side_width<
+    string label = "Left side width";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.1;
+uniform float left_side_size<
+    string label = "Left side size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.9;
+uniform float left_side_shadow<
+    string label = "Left side shadow";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.8;
+uniform float left_flip_width<
+    string label = "Left flip width";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.05;
+uniform float left_flip_shadow<
+    string label = "Left flip shadow";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.6;
 
-uniform float right_side_width = 0.1;
-uniform float right_side_size = 0.9;
-uniform float right_side_shadow = 0.8;
-uniform float right_flip_width = 0.05;
-uniform float right_flip_shadow = 0.6;
+uniform float right_side_width<
+    string label = "Right side width";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.1;
+uniform float right_side_size<
+    string label = "Right side size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.9;
+uniform float right_side_shadow<
+    string label = "Right side shadow";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.8;
+uniform float right_flip_width<
+    string label = "Right flip width";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.05;
+uniform float right_flip_shadow<
+    string label = "Right flip shadow";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.6;
 
 float4 mainImage(VertData v_in) : TARGET
 {

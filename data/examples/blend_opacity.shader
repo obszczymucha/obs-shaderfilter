@@ -3,13 +3,45 @@
 //Converted to OpenGL by Exeldro February 14, 2022
 uniform bool Vertical;
 uniform bool Rotational;
-uniform float Rotation_Offset = 0.0; //<Range(0.0, 6.28318531)>
-uniform float Opacity_Start_Percent = 0.0;
-uniform float Opacity_End_Percent = 100.0;
-uniform float Spread = 0.5; //<Range(0.5, 10.0)>
-uniform float Speed = 0.0; //<Range(-10.0, 10.0)>
+uniform float Rotation_Offset<
+    string label = "Rotation Offset";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 6.28318531;
+    float step = 0.01;
+> = 0.0;
+uniform float Opacity_Start_Percent<
+    string label = "Opacity Start Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 0.0;
+uniform float Opacity_End_Percent<
+    string label = "Opacity End Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 1.0;
+> = 100.0;
+uniform float Spread<
+    string label = "Spread";
+    string widget_type = "slider";
+    float minimum = 0.25;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 0.5;
+uniform float Speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = -10.0;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 0.0;
 uniform bool Apply_To_Alpha_Layer = true;
-uniform string Notes = "Spread is wideness of opacity blend and is limited between .25 and 10. Edit at your own risk. Invert Start and End to Reverse effect.";
+uniform string Notes<
+    string widget_type = "info";
+> = "Spread is wideness of opacity blend and is limited between .25 and 10. Edit at your own risk. Invert Start and End to Reverse effect.";
 
 float4 mainImage(VertData v_in) : TARGET
 {

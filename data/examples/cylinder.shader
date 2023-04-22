@@ -1,5 +1,17 @@
-uniform float cylinder_factor = 0.2;
-uniform float background_cut = 0.1;
+uniform float cylinder_factor<
+    string label = "Cylinder factor";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.2;
+uniform float background_cut<
+    string label = "Background cut";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.1;
 
 float4 mainImage(VertData v_in) : TARGET
 {

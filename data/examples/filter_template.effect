@@ -26,7 +26,9 @@ uniform float rand_instance_f;
 uniform float rand_activation_f;
 uniform int loops;
 uniform float local_time;
-uniform string notes = "add notes here";
+uniform string notes<
+    string widget_type = "info";
+> = "add notes here";
 
 #define iTime elapsed_time
 #define iResolution float4(uv_size,uv_pixel_interval)

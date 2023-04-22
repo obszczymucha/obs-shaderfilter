@@ -103,11 +103,13 @@ uniform bool Apply_Smoke = true;
 uniform float Smoke_Horizonal_Speed = 0.3;
 uniform float Smoke_Vertical_Speed = 0.17;
 uniform int Iterations = 4;
-uniform string Notes = "Animate refers to the burn effect. Speed is general and is reversed with negative numbers. Gradient Adjust is the width of the burn gradient. Use the burngradient.png. Dissolve Value is important. Apply Smoke adds the scrolling smoke.";
+uniform string Notes<
+    string widget_type = "info";
+> = "Animate refers to the burn effect. Speed is general and is reversed with negative numbers. Gradient Adjust is the width of the burn gradient. Use the burngradient.png. Dissolve Value is important. Apply Smoke adds the scrolling smoke.";
 
 float4 mainImage(VertData v_in) : TARGET
 {
-	float4 color = image.Sample(textureSampler, v_in.uv);
+	float4 c = image.Sample(textureSampler, v_in.uv);
 	float4 smoke = float4(1.0,1.0,1.0,1.0);
 	float4 result = smoke;
 	float t = elapsed_time * Speed;
@@ -140,7 +142,7 @@ float4 mainImage(VertData v_in) : TARGET
 	float4 burn = Burn_Gradient.Sample(textureSampler, float2(overOne, 0.5));
 
 	if (Apply_to_Channel) {
-		result =  color * burn;
+		result =  c * burn;
 	}
 	else {
 		result = float4(perlin, perlin, perlin, 1.0) * burn;

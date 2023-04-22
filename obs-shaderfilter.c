@@ -1,3 +1,4 @@
+// Version 2.0 by Exeldro https://github.com/exeldro/obs-shaderfilter
 // Version 1.21 by Charles Fettinger https://github.com/Oncorporation/obs-shaderfilter
 // original version by nleseul https://github.com/nleseul/obs-shaderfilter
 #include <obs-module.h>
@@ -17,6 +18,8 @@
 #include <string.h>
 
 #include <util/threading.h>
+
+#include "version.h"
 
 /* clang-format off */
 
@@ -146,8 +149,6 @@ struct shader_filter_data {
 
 	int total_width;
 	int total_height;
-	bool use_sliders;
-	bool use_sources; //consider using name instead, "source_name" or use annotation
 	bool use_shader_elapsed_time;
 	bool no_repeat;
 	bool rendering;
@@ -522,7 +523,6 @@ static void *shader_filter_create(obs_data_t *settings, obs_source_t *source)
 	dstr_copy(&filter->last_path,
 		  obs_data_get_string(settings, "shader_file_name"));
 	filter->last_from_file = obs_data_get_bool(settings, "from_file");
-	filter->use_sliders = obs_data_get_bool(settings, "use_sliders");
 	filter->rand_instance_f =
 		(float)((double)rand_interval(0, 10000) / (double)10000);
 	filter->rand_activation_f =
@@ -585,22 +585,17 @@ static bool shader_filter_file_name_changed(obs_properties_t *props,
 	    dstr_cmp(&filter->last_path, new_file_name) != 0) {
 		filter->reload_effect = true;
 		dstr_copy(&filter->last_path, new_file_name);
+		size_t l = strlen(new_file_name);
+		if (l > 7 &&
+		    strncmp(new_file_name + l - 7, ".effect", 7) == 0) {
+			obs_data_set_bool(settings, "override_entire_effect",
+					  true);
+		} else if (l > 7 &&
+			   strncmp(new_file_name + l - 7, ".shader", 7) == 0) {
+			obs_data_set_bool(settings, "override_entire_effect",
+					  false);
+		}
 	}
-
-	return false;
-}
-
-static bool use_sliders_changed(obs_properties_t *props, obs_property_t *p,
-				obs_data_t *settings)
-{
-	UNUSED_PARAMETER(p);
-	struct shader_filter_data *filter = obs_properties_get_param(props);
-
-	bool use_sliders = obs_data_get_bool(settings, "use_sliders");
-	if (use_sliders != filter->use_sliders) {
-		filter->reload_effect = true;
-	}
-	filter->use_sliders = use_sliders;
 
 	return false;
 }
@@ -693,11 +688,6 @@ static obs_properties_t *shader_filter_properties(void *data)
 		NULL, examples_path.array);
 	obs_property_set_modified_callback(file_name,
 					   shader_filter_file_name_changed);
-
-	obs_property_t *use_sliders = obs_properties_add_bool(
-		props, "use_sliders",
-		obs_module_text("ShaderFilter.UseSliders"));
-	obs_property_set_modified_callback(use_sliders, use_sliders_changed);
 
 	obs_property_t *use_shader_elapsed_time = obs_properties_add_bool(
 		props, "use_shader_elapsed_time",
@@ -803,20 +793,47 @@ static obs_properties_t *shader_filter_properties(void *data)
 						       display_name.array);
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
-			dstr_init_copy_dstr(&sources_name, &param->name);
-			dstr_cat(&sources_name, "_source");
-			obs_property_t *p = obs_properties_add_list(
-				props, sources_name.array, display_name.array,
-				OBS_COMBO_TYPE_EDITABLE,
-				OBS_COMBO_FORMAT_STRING);
-			dstr_free(&sources_name);
-			obs_property_list_add_string(p, "", "");
-			obs_enum_sources(add_source_to_list, p);
-			obs_enum_scenes(add_source_to_list, p);
-			obs_properties_add_path(
-				props, param_name, display_name.array,
-				OBS_PATH_FILE,
-				shader_filter_texture_file_filter, NULL);
+			if (widget_type != NULL &&
+			    strcmp(widget_type, "source") == 0) {
+				dstr_init_copy_dstr(&sources_name,
+						    &param->name);
+				dstr_cat(&sources_name, "_source");
+				obs_property_t *p = obs_properties_add_list(
+					props, sources_name.array,
+					display_name.array,
+					OBS_COMBO_TYPE_EDITABLE,
+					OBS_COMBO_FORMAT_STRING);
+				dstr_free(&sources_name);
+				obs_property_list_add_string(p, "", "");
+				obs_enum_sources(add_source_to_list, p);
+				obs_enum_scenes(add_source_to_list, p);
+
+			} else if (widget_type != NULL &&
+				   strcmp(widget_type, "file") == 0) {
+				obs_properties_add_path(
+					props, param_name, display_name.array,
+					OBS_PATH_FILE,
+					shader_filter_texture_file_filter,
+					NULL);
+			} else {
+				dstr_init_copy_dstr(&sources_name,
+						    &param->name);
+				dstr_cat(&sources_name, "_source");
+				obs_property_t *p = obs_properties_add_list(
+					props, sources_name.array,
+					display_name.array,
+					OBS_COMBO_TYPE_EDITABLE,
+					OBS_COMBO_FORMAT_STRING);
+				dstr_free(&sources_name);
+				obs_property_list_add_string(p, "", "");
+				obs_enum_sources(add_source_to_list, p);
+				obs_enum_scenes(add_source_to_list, p);
+				obs_properties_add_path(
+					props, param_name, display_name.array,
+					OBS_PATH_FILE,
+					shader_filter_texture_file_filter,
+					NULL);
+			}
 			break;
 		case GS_SHADER_PARAM_STRING:
 			if (widget_type != NULL &&
@@ -851,8 +868,6 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 	filter->expand_top = (int)obs_data_get_int(settings, "expand_top");
 	filter->expand_bottom =
 		(int)obs_data_get_int(settings, "expand_bottom");
-	filter->use_sliders = (bool)obs_data_get_bool(settings, "use_sliders");
-	filter->use_sources = (bool)obs_data_get_bool(settings, "use_sources");
 	filter->use_shader_elapsed_time =
 		(bool)obs_data_get_bool(settings, "use_shader_elapsed_time");
 	filter->rand_activation_f =
@@ -903,13 +918,12 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 						param->param));
 			param->value.i = obs_data_get_int(settings, param_name);
 			break;
-		case GS_SHADER_PARAM_VEC4: // Assumed to be a color.
-			if (gs_effect_get_default_val(param->param) != NULL) {
-				obs_data_set_default_int(
-					settings, param_name,
-					*(unsigned int *)
-						gs_effect_get_default_val(
-							param->param));
+		case GS_SHADER_PARAM_VEC4: { // Assumed to be a color.
+			struct vec4 *rgba =
+				gs_effect_get_default_val(param->param);
+			if (rgba != NULL) {
+				obs_data_set_default_int(settings, param_name,
+							 vec4_to_rgba(rgba));
 			} else {
 				// Hack to ensure we have a default...(white)
 				obs_data_set_default_int(settings, param_name,
@@ -917,6 +931,7 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			}
 			param->value.i = obs_data_get_int(settings, param_name);
 			break;
+		}
 		case GS_SHADER_PARAM_TEXTURE:
 			dstr_init_copy_dstr(&sources_name, &param->name);
 			dstr_cat(&sources_name, "_source");
@@ -943,7 +958,41 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 					gs_image_file_free(param->image);
 					obs_leave_graphics();
 				}
-
+				const char *path =
+					gs_effect_get_default_val(param->param);
+				if (path && strlen(path)) {
+					if (os_file_exists(path)) {
+						char *abs_path =
+							os_get_abs_path_ptr(
+								path);
+						obs_data_set_default_string(
+							settings, param_name,
+							abs_path);
+						bfree(abs_path);
+					} else {
+						struct dstr texture_path = {0};
+						dstr_init(&texture_path);
+						dstr_cat(
+							&texture_path,
+							obs_get_module_data_path(
+								obs_current_module()));
+						dstr_cat(&texture_path,
+							 "/textures/");
+						dstr_cat(&texture_path, path);
+						char *abs_path =
+							os_get_abs_path_ptr(
+								texture_path
+									.array);
+						if (os_file_exists(abs_path)) {
+							obs_data_set_default_string(
+								settings,
+								param_name,
+								abs_path);
+						}
+						bfree(abs_path);
+						dstr_free(&texture_path);
+					}
+				}
 				gs_image_file_init(
 					param->image,
 					obs_data_get_string(settings,
@@ -1205,27 +1254,29 @@ static void shader_filter_defaults(obs_data_t *settings)
 				    effect_template_default_image_shader);
 }
 
-struct obs_source_info shader_filter = {.id = "shader_filter",
-					.type = OBS_SOURCE_TYPE_FILTER,
-					.output_flags = OBS_SOURCE_VIDEO,
-					.create = shader_filter_create,
-					.destroy = shader_filter_destroy,
-					.update = shader_filter_update,
-					.load = shader_filter_update,
-					.video_tick = shader_filter_tick,
-					.get_name = shader_filter_get_name,
-					.get_defaults = shader_filter_defaults,
-					.get_width = shader_filter_getwidth,
-					.get_height = shader_filter_getheight,
-					.video_render = shader_filter_render,
-					.get_properties =
-						shader_filter_properties};
+struct obs_source_info shader_filter = {
+	.id = "shader_filter",
+	.type = OBS_SOURCE_TYPE_FILTER,
+	.output_flags = OBS_SOURCE_VIDEO,
+	.create = shader_filter_create,
+	.destroy = shader_filter_destroy,
+	.update = shader_filter_update,
+	.load = shader_filter_update,
+	.video_tick = shader_filter_tick,
+	.get_name = shader_filter_get_name,
+	.get_defaults = shader_filter_defaults,
+	.get_width = shader_filter_getwidth,
+	.get_height = shader_filter_getheight,
+	.video_render = shader_filter_render,
+	.get_properties = shader_filter_properties,
+};
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("obs-shaderfilter", "en-US")
 
 bool obs_module_load(void)
 {
+	blog(LOG_INFO, "[obs-shaderfilter] loaded version %s", PROJECT_VERSION);
 	obs_register_source(&shader_filter);
 
 	return true;

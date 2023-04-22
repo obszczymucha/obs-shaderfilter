@@ -34,13 +34,24 @@ uniform float rand_activation_f;
 uniform int loops;
 uniform float local_time;
 */
-uniform string notes = "add notes here";
 
 // 16x acceleration of https://www.shadertoy.com/view/4tSyzy
 // by applying gaussian at intermediate MIPmap level.
 
-uniform int samples = 16;
-uniform int LOD = 2; // gaussian done on MIPmap at scale LOD
+uniform int samples<
+    string label = "Samples";
+    string widget_type = "slider";
+    int minimum = 1;
+    int maximum = 25;
+    int step = 1;
+> = 16;
+uniform int LOD<
+    string label = "LOD";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 25;
+    int step = 1;
+> = 2; // gaussian done on MIPmap at scale LOD
 
 float gaussian(vec2 i)
 {

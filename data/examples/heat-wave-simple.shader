@@ -16,10 +16,34 @@
 // 0.02 - Added crude Rate, Strength, and Distortion controls
 // 0.01	- Initial release
 
-uniform float Rate = 5.0;
-uniform float Strength = 1.0;
-uniform float Distortion = 10.0;
-uniform float Opacity = 100.00;
+uniform float Rate<
+    string label = "Rate";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 5.0;
+uniform float Strength<
+    string label = "Strength";
+    string widget_type = "slider";
+    float minimum = -25.0;
+    float maximum = 25.0;
+    float step = 0.01;
+> = 1.0;
+uniform float Distortion<
+    string label = "Distortion";
+    string widget_type = "slider";
+    float minimum = 3.0;
+    float maximum = 20.0;
+    float step = 0.01;
+> = 10.0;
+uniform float Opacity<
+    string label = "Opacity";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 100.00;
 
 float4 mainImage( VertData v_in ) : TARGET
 {
@@ -32,7 +56,7 @@ float4 mainImage( VertData v_in ) : TARGET
 	float str = clamp(Strength, -25.0, 25.0) * 0.01;
    	
     uv += str * sin(scale*jacked_time + length( uv ) * distort);
-	float4 color = image.Sample( textureSampler, uv);
-	color.a *= saturate(Opacity*0.01);
-    return color;
+	float4 c = image.Sample( textureSampler, uv);
+	c.a *= saturate(Opacity*0.01);
+    return c;
 }

@@ -2,12 +2,34 @@
 //https://github.com/Oncorporation/obs-shaderfilter
 //OBS messed up the LUT system, this is basically the old LUT system
 //Converted to OpenGL by Q-mii & Exeldro February 25, 2022
-uniform string notes = "Choose LUT, Default LUT amount is 100, scale = 100, offset = 0. Valid values: -200 to 200";
+uniform string notes<
+    string widget_type = "info";
+> = "Choose LUT, Default LUT amount is 100, scale = 100, offset = 0. Valid values: -200 to 200";
 
-uniform texture2d lut;
-uniform int lut_amount_percent = 100;
-uniform int lut_scale_percent = 100;
-uniform int lut_offset_percent = 0;
+uniform texture2d lut<
+    string label = "LUT";
+>;
+uniform int lut_amount_percent<
+    string label = "LUT amount percentage";
+    string widget_type = "slider";
+    int minimum = -200;
+    int maximum = 200;
+    int step = 1;
+> = 100;
+uniform int lut_scale_percent<
+    string label = "LUT scale percentage";
+    string widget_type = "slider";
+    int minimum = -200;
+    int maximum = 200;
+    int step = 1;
+> = 100;
+uniform int lut_offset_percent<
+    string label = "LUT offset percentage";
+    string widget_type = "slider";
+    int minimum = -200;
+    int maximum = 200;
+    int step = 1;
+> = 0;
 
 
 float4 mainImage(VertData v_in) : TARGET

@@ -27,20 +27,55 @@ uniform float rand_instance_f;
 uniform float rand_activation_f;
 uniform int loops;
 uniform float local_time;
-uniform string notes = "add notes here";
 
-uniform float Movement_Direction_Horizontal = 0.0;
-uniform float Movement_Direction_Vertical = 0.0;
+uniform float Movement_Direction_Horizontal<
+    string label = "Movement Direction Horizontal";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 0.0;
+uniform float Movement_Direction_Vertical<
+    string label = "Movement Direction Vertical";
+    string widget_type = "slider";
+    float minimum = -100.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 0.0;
 
 #define iTime elapsed_time
 #define iResolution float4(uv_size,uv_pixel_interval)
 #define Movement_Direction float2(Movement_Direction_Horizontal, Movement_Direction_Vertical)
 
-uniform int Alpha_Percentage = 90; //<Range(0.0,100.0)>
-uniform int Speed = 80;
+uniform int Alpha_Percentage<
+    string label = "Alpha Percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 90;
+uniform int Speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 80;
 uniform bool Invert = false;
-uniform float lumaMin = 0.01;
-uniform float lumaMinSmooth = 0.04;
+uniform float lumaMin<
+    string label = "Luma Min";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.01;
+uniform float lumaMinSmooth<
+    string label = "Luma Min Smooth";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.01;
+> = 0.04;
 uniform bool Apply_To_Image = true;
 uniform bool Replace_Image_Color = true;
 uniform float4 Color_To_Replace;
@@ -89,13 +124,37 @@ float2 mod2(float2 x, float2 y)
 #define PI 3.1415926535897932384626433832795
 uniform bool Full_Width = false;
 
-uniform float Flame_Size = 1.0;
+uniform float Flame_Size<
+    string label = "Flame Size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 1.0;
 
-uniform float Spark_Grid_Height = 50;
+uniform float Spark_Grid_Height<
+    string label = "Spark Grid Size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 50.0;
 
-uniform float Flame_Modifier  = 1.0;
+uniform float Flame_Modifier<
+    string label = "Flame Modifier";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 1.0;
 
-uniform float Flame_Tongue_Size = 8.5;
+uniform float Flame_Tongue_Size<
+    string label = "Flame Tongue Size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 2.0;
+    float step = 0.01;
+> = 8.5;
 
 //
 // Description : Array and textureless GLSL 2D/3D/4D simplex 

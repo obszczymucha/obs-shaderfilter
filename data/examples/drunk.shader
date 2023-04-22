@@ -3,16 +3,48 @@
 uniform float4x4 color_matrix;
 
 
-uniform int glow_percent = 10;
-uniform int blur = 1;
-uniform int min_brightness= 27;
-uniform int max_brightness = 100;
-uniform int pulse_speed_percent = 0;
+uniform int glow_percent<
+    string label = "Glow percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 10;
+uniform int blur<
+    string label = "Blur";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 1;
+uniform int min_brightness<
+    string label = "Min brightness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 27;
+uniform int max_brightness<
+    string label = "Max brightness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 100;
+uniform int pulse_speed_percent<
+    string label = "Pulse speed percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 0;
 uniform bool Apply_To_Alpha_Layer = true;
 uniform float4 glow_color;
 uniform bool ease;
 uniform bool glitch;
-uniform string notes ="'drunk refers to the bad blur effect of using 4 coordinates to blur. 'blur' - the distance between the 4 copies (recommend 1-4)";
+uniform string notes<
+    string widget_type = "info";
+> ="'drunk refers to the bad blur effect of using 4 coordinates to blur. 'blur' - the distance between the 4 copies (recommend 1-4)";
 
 
 // Gaussian Blur
