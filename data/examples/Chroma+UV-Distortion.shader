@@ -52,9 +52,9 @@ float4 mainImage(VertData v_in) : TARGET
     float2 uvG = zoomUv(uvtG, 1.1);
     float2 uvB = zoomUv(uvtB, 1.1);
     
-    float colR = image.Sample(textureSampler, uvR).r;
-    float colG = image.Sample(textureSampler, uvG).g;
-    float colB = image.Sample(textureSampler, uvB).b;
+    float4 colR = image.Sample(textureSampler, uvR);
+    float4 colG = image.Sample(textureSampler, uvG);
+    float4 colB = image.Sample(textureSampler, uvB);
 
-    return float4(colR, colG, colB, 1.0);
+    return float4(colR.r, colG.g, colB.b, (colR.a + colG.a + colB.a) / 3.0);
 }
