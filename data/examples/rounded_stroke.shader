@@ -1,16 +1,37 @@
 //rounded rectange shader from https://raw.githubusercontent.com/exeldro/obs-lua/master/rounded_rect.shader
 //modified slightly by Surn 
-uniform int corner_radius;
-uniform int border_thickness;
-uniform int minimum_alpha_percent = 50;
+//Converted to OpenGl by Q-mii & Exeldro February 21, 2022
+uniform int corner_radius<
+    string label = "Corner radius";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int border_thickness<
+    string label = "border thickness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+>;
+uniform int minimum_alpha_percent<
+    string label = "Minimum alpha percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
 uniform float4 border_color;
-uniform string notes = "Outlines the opaque areas with a rounded border. Default Minimum Alpha Percent is 50%, lowering will reveal more";
+uniform string notes<
+    string widget_type = "info";
+> = "Outlines the opaque areas with a rounded border. Default Minimum Alpha Percent is 50%, lowering will reveal more";
 
 float4 mainImage(VertData v_in) : TARGET
 {
     float min_alpha = clamp(minimum_alpha_percent * .01, -1.0, 101.0);
-    float4 output = image.Sample(textureSampler, v_in.uv);
-    if (output.a < min_alpha)
+    float4 output_color = image.Sample(textureSampler, v_in.uv);
+    if (output_color.a < min_alpha)
     {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
@@ -34,7 +55,7 @@ float4 mainImage(VertData v_in) : TARGET
     }
     if (closedEdgeX == 0 && closedEdgeY == 0)
     {
-        return output;
+        return float4(output_color);
     }
     if (closedEdgeX != 0)
     {
@@ -78,7 +99,7 @@ float4 mainImage(VertData v_in) : TARGET
         }
         else
         {
-            return output;
+            return float4(output_color);
         }
     }
     if (closedEdgeY == 0)
@@ -89,7 +110,7 @@ float4 mainImage(VertData v_in) : TARGET
         }
         else
         {
-            return output;
+            return float4(output_color);
         }
     }
 
@@ -102,7 +123,7 @@ float4 mainImage(VertData v_in) : TARGET
         }
         else
         {
-            return output;
+            return output_color;
         }
     }
     return float4(0.0, 0.0, 0.0, 0.0);

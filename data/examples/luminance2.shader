@@ -1,12 +1,38 @@
 //Converted to OpenGL by Q-mii & Exeldro February 25, 2022
 uniform float4 color;
-uniform float lumaMax = 1.05;
-uniform float lumaMin = 0.01;
-uniform float lumaMaxSmooth = 0.10;
-uniform float lumaMinSmooth = 0.01;
+uniform float lumaMax<
+    string label = "Luma Max";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 1.05;
+uniform float lumaMin<
+    string label = "Luma Min";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.01;
+uniform float lumaMaxSmooth<
+    string label = "Luma Max Smooth";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.10;
+uniform float lumaMinSmooth<
+    string label = "Luma Min Smooth";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.01;
 uniform bool invertImageColor;
 uniform bool invertAlphaChannel;
-uniform string notes = "'luma max' - anything above will be transparent. 'luma min' - anything below will be transparent. 'luma(min or max)Smooth - make the transparency fade in or out by a distance. 'invert color' - inverts the color of the screen. 'invert alpha channel' - flips all settings on thier head, which is excellent for testing.";
+uniform string notes<
+    string widget_type = "info";
+> = "'luma max' - anything above will be transparent. 'luma min' - anything below will be transparent. 'luma(min or max)Smooth - make the transparency fade in or out by a distance. 'invert color' - inverts the color of the screen. 'invert alpha channel' - flips all settings on thier head, which is excellent for testing.";
 
 float4 InvertColor(float4 rgba_in)
 {	

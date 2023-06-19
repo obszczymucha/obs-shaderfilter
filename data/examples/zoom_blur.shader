@@ -3,12 +3,32 @@
 // https://github.com/dinfinity/mpc-pixel-shaders/blob/master/PS_Zoom%20Blur.hlsl 
 //for Media Player Classic HC or BE
 //Converted to OpenGL by Q-mii & Exeldro February 18, 2022
-uniform int samples = 32;
-uniform float magnitude = 0.5;
-uniform int speed_percent = 0;
+uniform int samples <
+    string label = "Samples";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 32;
+uniform float magnitude<
+    string label = "Magnitude";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.5;
+uniform int speed_percent <
+    string label = "Speed percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 0;
 uniform bool ease;
 uniform bool glitch;
-uniform string notes = "Speed Percent above zero will animate the zoom. Keep samples low to save power";
+uniform string notes<
+    string widget_type = "info";
+> = "Speed Percent above zero will animate the zoom. Keep samples low to save power";
 
 float EaseInOutCircTimer(float t,float b,float c,float d){
 	t /= d/2;

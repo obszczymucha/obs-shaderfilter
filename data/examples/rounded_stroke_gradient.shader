@@ -1,15 +1,53 @@
 //rounded rectange shader from https://raw.githubusercontent.com/exeldro/obs-lua/master/rounded_rect.shader
 //modified slightly by Surn 
-uniform int corner_radius;
-uniform int border_thickness;
-uniform int minimum_alpha_percent = 50;
-uniform int rotation_speed;
+uniform int corner_radius<
+    string label = "Corner radius";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int border_thickness<
+    string label = "Border thickness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+>;
+uniform int minimum_alpha_percent<
+    string label = "Minimum alpha percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform int rotation_speed<
+    string label = "rotation speed";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+>;
 uniform float4 border_colorL;
 uniform float4 border_colorR;
 //uniform float color_spread = 2.0;
-uniform int center_width = 50;
-uniform int center_height = 50;
-uniform string notes = "Outlines the opaque areas with a rounded border. Default Minimum Alpha Percent is 50%, lowering will reveal more";
+uniform int center_width<
+    string label = "center width";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform int center_height<
+    string label = "center height";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform string notes<
+    string widget_type = "info";
+> = "Outlines the opaque areas with a rounded border. Default Minimum Alpha Percent is 50%, lowering will reveal more";
 
 // float3 hsv2rgb(float3 c)
 // {

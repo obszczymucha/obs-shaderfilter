@@ -8,7 +8,6 @@ uniform float2 uv_scale;
 uniform float2 uv_pixel_interval;
 uniform float rand_f;
 uniform float2 uv_size;
-uniform string notes;
 
 sampler_state textureSampler {
 	Filter    = Linear;
@@ -30,9 +29,27 @@ VertData mainTransform(VertData v_in)
 	return vert_out;
 }
 
-uniform int shadow_offset_x;
-uniform int shadow_offset_y;
-uniform int shadow_blur_size;
+uniform int shadow_offset_x<
+    string label = "shadow offset x";
+    string widget_type = "slider";
+    int minimum = -1000;
+    int maximum = 1000;
+    int step = 1;
+>;
+uniform int shadow_offset_y<
+    string label = "shadow offset y";
+    string widget_type = "slider";
+    int minimum = -1000;
+    int maximum = 1000;
+    int step = 1;
+>;
+uniform int shadow_blur_size<
+    string label = "shadow blur size";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+>;
 
 uniform float4 shadow_color;
 

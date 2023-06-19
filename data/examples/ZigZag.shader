@@ -1,14 +1,65 @@
 //Created by Radegast Stravinsky for obs-shaderfilter 9/2020
-uniform float radius = 0.0;
-uniform float angle = 180.0;
-uniform float period = 0.5;
-uniform float amplitude = 1.0;
+uniform float radius<
+    string label = "radius";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 0.0;
+uniform float angle<
+    string label = "angle";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 360.0;
+    float step = 0.1;
+> = 180.0;
+uniform float period<
+    string label = "period";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 0.5;
+uniform float amplitude<
+    string label = "amplitude";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.0;
 
-uniform float center_x = 0.25;
-uniform float center_y = 0.25;
+uniform float center_x<
+    string label = "center x";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 0.5;
+    float step = 0.001;
+> = 0.25;
+uniform float center_y<
+    string label = "center y";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 0.5;
+    float step = 0.001;
+> = 0.25;
 
-uniform float phase = 1.0;
-uniform int animate = 0;
+uniform float phase<
+    string label = "phase";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.0;
+uniform int animate<
+  string label = "animate";
+  string widget_type = "select";
+  int    option_0_value = 0;
+  string option_0_label = "No";
+  int    option_1_value = 1;
+  string option_1_label = "Amplitude";
+  int    option_2_value = 2;
+  string option_2_label = "Time";
+> = 0;
 
 
 uniform string notes = "Distorts the screen, creating a rippling effect that moves clockwise and anticlockwise."

@@ -3,14 +3,28 @@
 
 //lots of room to play here
 //Converted to OpenGL by Q-mii & Exeldro February 25, 2022
-uniform int speed_percentage = 240; //<Range(-100.0, 100.0)>
-uniform int alpha_percentage = 90;
+uniform int speed_percentage<
+    string label = "speed percentage";
+    string widget_type = "slider";
+    int minimum = -500;
+    int maximum = 500;
+    int step = 1;
+> = 240; //<Range(-100.0, 100.0)>
+uniform int alpha_percentage<
+    string label = "aplha percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 90;
 uniform bool Lens_Flair = false;
 uniform bool Animate_Lens_Flair = false;
 uniform bool Apply_To_Alpha_Layer = false;
 uniform bool Apply_To_Specific_Color;
 uniform float4 Color_To_Replace;
-uniform string notes = "This gradient is very basic from the top left corner. Red on horizontal, Green vertical, Blue Diagonal. Apply To Alpha Layer will add the gradient colors to the background. Lens Flair will brighten the scene from the bottom right. There is also a lot of unused code to play with in the shader file, delimted by /* ... */";
+uniform string notes<
+    string widget_type = "info";
+> = "This gradient is very basic from the top left corner. Red on horizontal, Green vertical, Blue Diagonal. Apply To Alpha Layer will add the gradient colors to the background. Lens Flair will brighten the scene from the bottom right. There is also a lot of unused code to play with in the shader file, delimted by /* ... */";
 
 float4 mainImage(VertData v_in) : TARGET
 {

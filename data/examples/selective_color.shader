@@ -2,18 +2,65 @@
 //https://github.com/Oncorporation/obs-shaderfilter
 //updated 4/13/2020: take into account the opacity/alpha of input image		-thanks Skeletonbow for suggestion
 //Converted to OpenGL by Q-mii February 25, 2020
-uniform float cutoff_Red = 0.40;
-uniform float cutoff_Green = 0.025;
-uniform float cutoff_Blue = 0.25;
-uniform float cutoff_Yellow = 0.25;
-uniform float acceptance_Amplifier = 5.0;
+uniform float cutoff_Red<
+    string label = "cutoff Red";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.40;
+uniform float cutoff_Green<
+    string label = "cutoff Green";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.025;
+uniform float cutoff_Blue<
+    string label = "cutoff Blue";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.25;
+uniform float cutoff_Yellow<
+    string label = "cutoff Yellow";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.25;
+uniform float acceptance_Amplifier<
+    string label = "acceptance Amplifier";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 20.0;
+    float step = 0.001;
+> = 5.0;
 
 uniform bool show_Red = true;
 uniform bool show_Green = true;
 uniform bool show_Blue = true;
 uniform bool show_Yellow = true;
-uniform string notes = "defaults: .4,.03,.25,.25, 5.0, true,true, true, true. cuttoff higher = less color, 0 = all 1 = none. Valid Background Types: 0 = Grey, 1 = Luma, 2 = White, 3 = Black, 4 = Transparent, 5 = Background Color ";
-uniform int background_type = 0;
+uniform string notes<
+    string widget_type = "info";
+> = "defaults: .4,.03,.25,.25, 5.0, true,true, true, true. cuttoff higher = less color, 0 = all 1 = none.";
+uniform int background_type<
+  string label = "background type";
+  string widget_type = "select";
+  int    option_0_value = 0;
+  string option_0_label = "Grey";
+  int    option_1_value = 1;
+  string option_1_label = "Luma";
+  int    option_2_value = 2;
+  string option_2_label = "White";
+  int    option_3_value = 3;
+  string option_3_label = "Black";
+  int    option_4_value = 4;
+  string option_4_label = "Transparent";
+  int    option_5_value = 5;
+  string option_5_label = "Background Color";
+> = 0;
 
 float4 mainImage(VertData v_in) : TARGET
 {

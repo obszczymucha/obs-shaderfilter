@@ -1,8 +1,38 @@
-uniform float distance_factor = 12.0;
-uniform float time_factor = 2.0;
-uniform float power_factor = 3.0;
-uniform float center_pos_x = 0.0;
-uniform float center_pos_y = 0.0;
+uniform float distance_factor<
+    string label = "distance factor";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.001;
+> = 12.0;
+uniform float time_factor<
+    string label = "time factor";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 2.0;
+uniform float power_factor<
+    string label = "power factor";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 3.0;
+uniform float center_pos_x<
+    string label = "center pos x";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.0;
+uniform float center_pos_y<
+    string label = "center pos y";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.0;
 
 float4 mainImage(VertData v_in) : TARGET
 {

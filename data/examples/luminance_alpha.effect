@@ -12,9 +12,27 @@ uniform float2 uv_size;
 
 uniform float4x4 color_matrix;
 uniform float4 color;
-uniform float mul_val = 1.0;
-uniform float add_val = 0.0;
-uniform float level =1.0;
+uniform float mul_val<
+    string label = "Mulitply";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 1.0;
+uniform float add_val<
+    string label = "Add";
+    string widget_type = "slider";
+    float minimum = -10.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.0;
+uniform float level<
+    string label = "Level";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> =1.0;
 uniform bool invertAlphaChannel;
 
 sampler_state textureSampler {

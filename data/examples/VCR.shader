@@ -1,11 +1,47 @@
 //based on https://www.shadertoy.com/view/ldjGzV
 //Converted to OpenGL by Exeldro February 19, 2022
-uniform float vertical_shift = 0.4;
-uniform float distort = 1.2;
-uniform float vignet = 1.0;
-uniform float stripe = 1.0;
-uniform float vertical_factor = 1.0;
-uniform float vertical_height = 30.0;
+uniform float vertical_shift<
+    string label = "vertical shift";
+    string widget_type = "slider";
+    float minimum = -5.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 0.4;
+uniform float distort<
+    string label = "distort";
+    string widget_type = "slider";
+    float minimum = 0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.2;
+uniform float vignet<
+    string label = "vignet";
+    string widget_type = "slider";
+    float minimum = -5.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.0;
+uniform float stripe<
+    string label = "stripe";
+    string widget_type = "slider";
+    float minimum = -5.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.0;
+uniform float vertical_factor<
+    string label = "vertical factor";
+    string widget_type = "slider";
+    float minimum = -5.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.0;
+uniform float vertical_height<
+    string label = "vertical height";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1000.0;
+    float step = 0.1;
+> = 30.0;
 
 float onOff(float a, float b, float c)
 {

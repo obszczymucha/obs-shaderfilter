@@ -1,12 +1,60 @@
-uniform int corner_radius_bottom;
-uniform int corner_radius_left;
-uniform int corner_radius_top;
-uniform int corner_radius_right;
-uniform int border_thickness;
+uniform int corner_radius_bottom<
+    string label = "Corner radius bottom";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int corner_radius_left<
+    string label = "Corner radius left";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int corner_radius_top<
+    string label = "Corner radius top";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int corner_radius_right<
+    string label = "Corner radius right";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int border_thickness<
+    string label = "Border thickness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+>;
 uniform float4 border_color;
-uniform float border_alpha_start = 1.0;
-uniform float border_alpha_end = 0.0;
-uniform float alpha_cut_off = 0.5;
+uniform float border_alpha_start<
+    string label = "border alpha start";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 1.0;
+uniform float border_alpha_end<
+    string label = "border alpha end";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.0;
+uniform float alpha_cut_off<
+    string label = "alpha cut off";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.5;
 
 float4 mainImage(VertData v_in) : TARGET
 {

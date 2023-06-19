@@ -74,7 +74,7 @@ VertData mainTransform(VertData v_in)
 
 float4 grayscale(float4 color)
 {
-	float grayscale = dot(color.rgb, float3(0.3, 0.59, 0.11));
+	float grayscale = color.r * 0.3 + color.g * 0.59 + color.b * 0.11;
 	return float4(grayscale, grayscale, grayscale, color.a);
 }
 

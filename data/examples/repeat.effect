@@ -13,8 +13,20 @@ uniform float2 uv_pixel_interval;
 uniform float2 uv_size;
 uniform float rand_f;
 
-uniform float alpha = 1.0;
-uniform float copies = 4.0;
+uniform float alpha<
+    string label = "Alpha";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 3.0;
+    float step = 0.001;
+> = 1.0;
+uniform float copies<
+    string label = "Copies";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 4.0;
 uniform string notes<
     string widget_type = "info";
 > = 'copies, use a number that has a square root. Alpha adjusts the alpha level of the copies (recommend 0.5-2.0 recommend)';

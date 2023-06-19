@@ -2,15 +2,41 @@
 // for use with obs-shaderfilter 1.0
 //based upon: https://www.shadertoy.com/view/XsX3zB
 
-uniform float Snap_Percent = 7.5;
-uniform float Speed_Percent = 2.5;
-uniform float Resolution = 16.0;
+uniform float Snap_Percent<
+    string label = "Snap Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 7.5;
+uniform float Speed_Percent<
+    string label = "Speed Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 2.5;
+uniform float Resolution<
+    string label = "Resolution";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 16.0;
 uniform bool Fractal = false;
 uniform bool Use_Alpha_Layer = false;
 uniform float4 Fore_Color = {0.95,0.95,0.95, 1.0};
 uniform float4 Back_Color = {0.75, 0.75, 0.75, 1.0};
-uniform float Alpha_Percent = 100.0;
-uniform string Notes = "Alpha Percentage applies to the shader, Use_Alpha_Layer applies effect with the image alpha layer, Resolution is the amount of detail of noise created.Fractal is a different algorithm. Snap Percent affects how many updates per second. Default values: 7.5%, 2.5%, 16.0, 100%";
+uniform float Alpha_Percent<
+    string label = "Alpha Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 100.0;
+uniform string Notes<
+    string widget_type = "info";
+> = "Alpha Percentage applies to the shader, Use_Alpha_Layer applies effect with the image alpha layer, Resolution is the amount of detail of noise created.Fractal is a different algorithm. Snap Percent affects how many updates per second. Default values: 7.5%, 2.5%, 16.0, 100%";
 
 float snap(float x, float snap)
 {

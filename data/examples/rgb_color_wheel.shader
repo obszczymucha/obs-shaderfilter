@@ -1,16 +1,45 @@
 // RGB Color Wheel shader by Charles Fettinger for obs-shaderfilter plugin 5/2020
 // https://github.com/Oncorporation/obs-shaderfilter
 //Converted to OpenGl by Q-mii & Exeldro February 25, 2022
-uniform float speed = 2.0;
-uniform float color_depth = 2.10;
+uniform float speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 15.0;
+    float step = 0.1;
+> = 2.0;
+uniform float color_depth<
+    string label = "Color Depth";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.1;
+> = 2.10;
 uniform bool Apply_To_Image;
 uniform bool Replace_Image_Color;
 uniform bool Apply_To_Specific_Color;
 uniform float4 Color_To_Replace;
-uniform float Alpha_Percentage = 100; //<Range(0.0,100.0)>
-uniform int center_width_percentage = 50;
-uniform int center_height_percentage = 50;
-uniform string notes = "add notes here";
+uniform float Alpha_Percentage<
+    string label = "Alpha Percentage";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100; //<Range(0.0,100.0)>
+uniform int center_width_percentage<
+    string label = "center width percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform int center_height_percentage<
+    string label = "center height percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
 
 float3 hsv2rgb(float3 c)
 {

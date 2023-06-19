@@ -1,8 +1,16 @@
 // Remove Partial Pixels shader by Charles Fettinger for obs-shaderfilter plugin 8/2020
 // https://github.com/Oncorporation/obs-shaderfilter
 //Converted to OpenGL by Exeldro February 21, 2022
-uniform int minimum_alpha_percent = 50;
-uniform string notes = "Removes partial pixels, excellent for cleaning greenscreen. Default Minimum Alpha Percent is 50%, lowering will reveal more pixels";
+uniform int minimum_alpha_percent<
+    string label = "minimum alpha percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform string notes<
+    string widget_type = "info";
+> = "Removes partial pixels, excellent for cleaning greenscreen. Default Minimum Alpha Percent is 50%, lowering will reveal more pixels";
 
 float4 mainImage(VertData v_in) : TARGET
 {

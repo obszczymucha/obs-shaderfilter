@@ -1,11 +1,37 @@
 // Spotlight By Charles Fettinger (https://github.com/Oncorporation)  4/2019
-uniform float Speed_Percent = 100.0; 
-uniform float Focus_Percent = 15.0;
+uniform float Speed_Percent<
+    string label = "Speed Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 100.0; 
+uniform float Focus_Percent<
+    string label = "Focus Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 15.0;
 uniform bool Glitch;
 uniform float4 Spotlight_Color;
-uniform float Horizontal_Offset = 0.0;
-uniform float Vertical_Offset = -0.5;
-uniform string Notes = "use negative Focus Percent to create a shade effect, speed zero is a stationary spotlight";
+uniform float Horizontal_Offset<
+    string label = "Horizontal Offset";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.0;
+uniform float Vertical_Offset<
+    string label = "Vertical Offset";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = -0.5;
+uniform string Notes<
+    string widget_type = "info";
+> = "use negative Focus Percent to create a shade effect, speed zero is a stationary spotlight";
 
 float4 mainImage(VertData v_in) : TARGET
 {

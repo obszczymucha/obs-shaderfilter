@@ -14,14 +14,40 @@ uniform float2 uv_size;
 uniform float local_time;
 
 
-uniform float random_scale = 0.25;
+uniform float random_scale<
+    string label = "random scale";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.25;
 uniform bool worble = false;
-uniform float speed = 1.0;
-uniform float min_growth_pixels = -2.0;
-uniform float max_growth_pixels = 2.0;
+uniform float speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 1.0;
+uniform float min_growth_pixels<
+    string label = "min growth pixels";
+    string widget_type = "slider";
+    float minimum = -10.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = -2.0;
+uniform float max_growth_pixels<
+    string label = "max growth pixels";
+    string widget_type = "slider";
+    float minimum = -10.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 2.0;
 uniform bool randomize_movement = false;
 
-uniform string notes ='keep the random_scale low for small (0.2-1) for small jerky movements and larger for less often big jumps';
+uniform string notes<
+    string widget_type = "info";
+> ='keep the random_scale low for small (0.2-1) for small jerky movements and larger for less often big jumps';
 
 sampler_state textureSampler {
 	Filter    = Linear;

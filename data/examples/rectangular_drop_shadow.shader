@@ -1,7 +1,25 @@
 //Converted to OpenGL by Exeldro February 22, 2022
-uniform int shadow_offset_x;
-uniform int shadow_offset_y;
-uniform int shadow_blur_size;
+uniform int shadow_offset_x<
+    string label = "shadow offset x";
+    string widget_type = "slider";
+    int minimum = -100;
+    int maximum = 100;
+    int step = 1;
+>;
+uniform int shadow_offset_y<
+    string label = "shadow offset y";
+    string widget_type = "slider";
+    int minimum = -100;
+    int maximum = 100;
+    int step = 1;
+>;
+uniform int shadow_blur_size<
+    string label = "shadow blur size";
+    string widget_type = "slider";
+    int minimum = 1;
+    int maximum = 100;
+    int step = 1;
+> = 1;
 
 uniform float4 shadow_color;
 

@@ -8,11 +8,31 @@ uniform float2 uv_pixel_interval;
 uniform float rand_f;
 uniform float2 uv_size;
 
-uniform float pixelation = 8;// <float min = 1; float step = 0.1;>;
+uniform float pixelation<
+    string label = "Pixelation";
+    string widget_type = "slider";
+    float minimum = 1.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 8.0;// <float min = 1; float step = 0.1;>;
 uniform bool doodle = false;
-uniform float Doodle_Scale_Percent = 2.5;
-uniform float Snap_Percent= 7.5;
-uniform string Notes = "Higher is more pixelation. Doodle skews the image by the Scale Percent, Snap Percent controls the number of doodles per second.";
+uniform float Doodle_Scale_Percent<
+    string label = "Doodle Scale Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 2.5;
+uniform float Snap_Percent<
+    string label = "Snap Percent";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+>= 7.5;
+uniform string Notes<
+    string widget_type = "info";
+> = "Higher is more pixelation. Doodle skews the image by the Scale Percent, Snap Percent controls the number of doodles per second.";
 
 sampler_state textureSampler {
 	Filter    = Linear;

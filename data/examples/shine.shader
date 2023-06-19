@@ -4,16 +4,36 @@
 //Converted to OpenGL by Exeldro February 14, 2022
 uniform texture2d l_tex;
 uniform float4 shine_color ;
-uniform int speed_percent = 25;
-uniform int gradient_percent = 20;
-uniform int delay_percent = 50;
+uniform int speed_percent<
+    string label = "speed percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 25;
+uniform int gradient_percent<
+    string label = "gradient percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 20;
+uniform int delay_percent<
+    string label = "gradient percent";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
 uniform bool Apply_To_Alpha_Layer = false;
 uniform bool ease = false;
 uniform bool hide = false;
 uniform bool reverse = false;
 uniform bool One_Direction = true;
 uniform bool glitch = false;
-uniform string notes = "Use Luma Wipes ( data/obs-plugins/obs-transitions/luma_wipes ) 'ease' makes the animation pause at the begin and end for a moment, 'hide' will make the image disappear, 'glitch' is random and amazing, 'reverse' quickly allows you to test settings, 'One Direction' only shows the shine as it travels in one direction, 'delay percentage' adds a delay between shines (requires adjustment to speed: https://www.desmos.com/calculator/wkgbndweyt )";
+uniform string notes<
+    string widget_type = "info";
+> = "Use Luma Wipes ( data/obs-plugins/obs-transitions/luma_wipes ) 'ease' makes the animation pause at the begin and end for a moment, 'hide' will make the image disappear, 'glitch' is random and amazing, 'reverse' quickly allows you to test settings, 'One Direction' only shows the shine as it travels in one direction, 'delay percentage' adds a delay between shines (requires adjustment to speed: https://www.desmos.com/calculator/wkgbndweyt )";
 
 uniform float start_adjust;
 uniform float stop_adjust;

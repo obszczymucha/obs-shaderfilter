@@ -1,8 +1,28 @@
 //Converted to OpenGL by Q-mii & Exeldro February 21, 2022
-uniform	float innerRadius = 0.9;
-uniform	float outerRadius = 1.5;
-uniform	float opacity = 0.8;
-uniform string notes = "inner radius will always be shown, outer radius is the falloff";
+uniform	float innerRadius<
+    string label = "inner radius";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 0.9;
+uniform	float outerRadius<
+    string label = "outer radius";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 5.0;
+    float step = 0.001;
+> = 1.5;
+uniform	float opacity<
+    string label = "opacity";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.8;
+uniform string notes<
+    string widget_type = "info";
+> = "inner radius will always be shown, outer radius is the falloff";
 
 float4 mainImage(VertData v_in) : TARGET
 {

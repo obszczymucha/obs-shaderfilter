@@ -111,19 +111,57 @@ float pnoise(float2 P, float2 rep)
 }
  //The good bits~ adapting the noise generator for the plugin and giving some control over the shader
  //todo: pseudorandom number generator w/ seed
-uniform float speed = 0.5;
+uniform float speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.5;
 uniform bool animated;
 uniform bool apply_to_channel;
 uniform bool inverted;
 uniform bool multiply;
-uniform float speed_horizonal = 0.5;
-uniform float speed_vertical = 0;
-uniform float iterations = 4;
+uniform float speed_horizonal<
+    string label = "Speed horizontal";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.5;
+uniform float speed_vertical<
+    string label = "Speed vertical";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0;
+uniform int iterations<
+    string label = "Iterations";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 20;
+    int step = 1;
+> = 4;
 //how much c_noise do we want? white
-uniform float white_noise = 0.5;
+uniform float white_noise<
+    string label = "White noise";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.5;
 //how much p_noise do we want? black
-uniform float black_noise = 0.5;
-uniform string notes = "white noise and black noise and iterations.. enjoy!";
+uniform float black_noise<
+    string label = "Black noise";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.5;
+uniform string notes<
+    string widget_type = "info";
+> = "white noise and black noise and iterations.. enjoy!";
 
  float2 noisePosition(float t){
 	return float2(sin(2.2 * t) - cos(1.4 * t), cos(1.3 * t) + sin(-1.9 *t));

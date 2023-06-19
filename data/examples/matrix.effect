@@ -31,8 +31,8 @@ uniform float local_time;
 
 
 uniform float2 mouse<
-	string name = "Virtual Mouse Coordinates";
-	string field_type = "slider";
+	string label = "Virtual Mouse Coordinates";
+	string widget_type = "slider";
 	float2 minimum = {0, 0};
 	float2 maximum = {100., 100.};
 	float2 scale = {.01, .01};
@@ -55,13 +55,37 @@ sampler_state textureSampler {
 */
 
 uniform bool Invert_Direction<
-	string name = "Invert Direction";
+	string label = "Invert Direction";
 > = true;
 
-uniform float lumaMin = 0.01;
-uniform float lumaMinSmooth = 0.01;
-uniform float Ratio = 4.0;
-uniform float Alpha_Percentage = 100; //<Range(0.0,100.0)>
+uniform float lumaMin<
+    string label = "Luma Min";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.01;
+uniform float lumaMinSmooth<
+    string label = "Luma Min Smooth";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 10.0;
+    float step = 0.001;
+> = 0.01;
+uniform float Ratio<
+    string label = "Ratio";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 4.0;
+uniform float Alpha_Percentage<
+    string label = "Alpha Percentage";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 100; //<Range(0.0,100.0)>
 uniform bool Apply_To_Alpha_Layer = true;
 
 #define PI2 6.28318530718

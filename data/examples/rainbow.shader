@@ -1,19 +1,57 @@
 // Rainbow shader by Charles Fettinger for obs-shaderfilter plugin 3/2019
 // https://github.com/Oncorporation/obs-shaderfilter
 //Converted to OpenGL by Exeldro February 13, 2022
-uniform float Saturation = 0.8; //<Range(0.0, 1.0)>
-uniform float Luminosity = 0.5; //<Range(0.0, 1.0)>
-uniform float Spread = 3.8; //<Range(0.5, 10.0)>
-uniform float Speed = 2.4; //<Range(-10.0, 10.0)>
-uniform float Alpha_Percentage = 100; //<Range(0.0,100.0)>
+uniform float Saturation<
+    string label = "Saturation";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.8; //<Range(0.0, 1.0)>
+uniform float Luminosity<
+    string label = "Luminosity";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.5; //<Range(0.0, 1.0)>
+uniform float Spread<
+    string label = "Spread";
+    string widget_type = "slider";
+    float minimum = 0.5;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 3.8; //<Range(0.5, 10.0)>
+uniform float Speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = -10.0;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 2.4; //<Range(-10.0, 10.0)>
+uniform float Alpha_Percentage<
+    string label = "Rotation Offset";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.1;
+> = 100.0; //<Range(0.0,100.0)>
 uniform bool Vertical;
 uniform bool Rotational;
-uniform float Rotation_Offset = 0.0; //<Range(0.0, 6.28318531)>
+uniform float Rotation_Offset<
+    string label = "Rotation Offset";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 6.28318531;
+    float step = 0.001;
+> = 0.0; //<Range(0.0, 6.28318531)>
 uniform bool Apply_To_Image;
 uniform bool Replace_Image_Color;
 uniform bool Apply_To_Specific_Color;
 uniform float4 Color_To_Replace;
-uniform string Notes = "Spread is wideness of color and is limited between .25 and 10. Edit at your own risk";
+uniform string Notes<
+    string widget_type = "info";
+> = "Spread is wideness of color and is limited between .25 and 10. Edit at your own risk";
 
 float hueToRGB(float v1, float v2, float vH) {
 	vH = frac(vH);

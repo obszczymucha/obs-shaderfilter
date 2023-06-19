@@ -2,29 +2,87 @@
 // https://github.com/Oncorporation/obs-shaderfilter
 //https://www.shadertoy.com/view/3tfXRM Simple Night Sky - converted from and updated
 //Converted to OpenGL by Q-mii & Exeldro February 22, 2022
-uniform string notes = "add notes here";
-
-uniform float speed = 20.0;
+uniform float speed<
+    string label = "Speed";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 20.0;
 uniform bool Include_Clouds = true;
 uniform bool Include_Moon = true;
-uniform int center_width_percentage = 50;
-uniform int center_height_percentage = 50;
-uniform float Alpha_Percentage = 95; //<Range(0.0,100.0)>
+uniform int center_width_percentage<
+    string label = "Center width percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform int center_height_percentage<
+    string label = "Center width percentage";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 50;
+uniform float Alpha_Percentage<
+    string label = "Alpha Percentage";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 100.0;
+    float step = 0.01;
+> = 95.0; //<Range(0.0,100.0)>
 uniform bool Apply_To_Image = false;
 uniform bool Replace_Image_Color = false;
-uniform int number_stars = 20; //<Range(0.0,100.0)>
+uniform int number_stars<
+    string label = "Number stars";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+> = 20; //<Range(0,100)>
 
 uniform float4 SKY_COLOR = { 0.027, 0.151, 0.354, 1.0 };
 uniform float4 STAR_COLOR = { 0.92, 0.92, 0.14, 1.0 };
 uniform float4 LIGHT_SKY = { 0.45, 0.61, 0.98, 1.0 };
-uniform float SKY_LIGHTNESS = .3;
+uniform float SKY_LIGHTNESS<
+    string label = "SKY LIGHTNESS";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = .3;
 
  // Moon
 uniform float4 MOON_COLOR = { .4, .25, 0.25, 1.0 };
-uniform float moon_size = 0.18;
-uniform float moon_bump_size = 0.14;
-uniform float Moon_Position_x = -0.6;
-uniform float Moon_Position_y = -0.3;
+uniform float moon_size<
+    string label = "Moon size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.18;
+uniform float moon_bump_size<
+    string label = "Moon bump size";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.14;
+uniform float Moon_Position_x<
+    string label = "Moon Position x";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = -0.6;
+uniform float Moon_Position_y<
+    string label = "Moon Position y";
+    string widget_type = "slider";
+    float minimum = -1.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = -0.3;
 
 #define PI 3.1416
 

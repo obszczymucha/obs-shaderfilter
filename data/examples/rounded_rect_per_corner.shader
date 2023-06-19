@@ -1,12 +1,61 @@
-uniform int corner_radius_tl;
-uniform int corner_radius_tr;
-uniform int corner_radius_br;
-uniform int corner_radius_bl;
-uniform int border_thickness;
+//Converted to OpenGL by Q-mii & Exeldro February 18, 2022
+uniform int corner_radius_tl<
+    string label = "Corner radius top left";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int corner_radius_tr<
+    string label = "Corner radius top right";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int corner_radius_br<
+    string label = "Corner radius bottom right";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int corner_radius_bl<
+    string label = "Corner radius bottom left";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 200;
+    int step = 1;
+>;
+uniform int border_thickness<
+    string label = "Border thickness";
+    string widget_type = "slider";
+    int minimum = 0;
+    int maximum = 100;
+    int step = 1;
+>;
 uniform float4 border_color;
-uniform float border_alpha_start = 1.0;
-uniform float border_alpha_end = 0.0;
-uniform float alpha_cut_off = 0.5;
+uniform float border_alpha_start<
+    string label = "border alpha start";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 1.0;
+uniform float border_alpha_end<
+    string label = "border alpha end";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.0;
+uniform float alpha_cut_off<
+    string label = "alpha cut off";
+    string widget_type = "slider";
+    float minimum = 0.0;
+    float maximum = 1.0;
+    float step = 0.001;
+> = 0.5;
 
 float4 mainImage(VertData v_in) : TARGET
 {
@@ -80,7 +129,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeXabs == 0){
         if(closedEdgeYabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeYabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (closedEdgeYabs / border_thickness)*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return pixel;
@@ -89,7 +138,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeYabs == 0){
         if(closedEdgeXabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeXabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (closedEdgeXabs / border_thickness)*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return pixel;
@@ -98,7 +147,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeXabs > corner_radius){
         if(closedEdgeYabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeYabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (closedEdgeYabs / border_thickness)*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return pixel;
@@ -107,7 +156,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeYabs > corner_radius){
         if(closedEdgeXabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeXabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (closedEdgeXabs / border_thickness)*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return pixel;
@@ -117,7 +166,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(d<corner_radius){
         if(corner_radius-d <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((corner_radius-d)/ (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + ((corner_radius-d)/ border_thickness)*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return pixel;
