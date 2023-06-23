@@ -144,7 +144,12 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | blink.shader | A shader that fades the opacity of the output in and out over time, with a configurable speed multiplier. Demonstrates the user of the `elapsed_time` parameter. |  |
 | bloom.shader / glow.shader |  simple shaders to add glow or bloom effects, the glow shader has some additional options for animation |  |
 | box-blur.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/076efaca-c8fa-4e08-8906-46fde354dbb8) |
-| cartoon.effect | Simple Cartooning based on hue and steps of detail value. |  |
+| bloom.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/567e5dc4-ec20-42fa-a344-2be1e6516b01) |
+| burn.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/8d703243-2db3-4fc1-8c2f-836d61fcee13) |
+| call_shaded.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/d07aa2ef-05fc-407f-82ab-448f0aca8730) |
+| cartoon.effect | Simple Cartooning based on hue and steps of detail value. | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/17d272f0-b692-4452-b982-522a98d7a1f5) |
+| Chroma+UV-Distortion.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/c0db01c3-1e87-450c-9b4f-56a6e61a07b1) |
+| chromatic-aberration.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/ab99dc36-b9c2-405d-b9ca-3216866003fa) |
 | border.shader | A shader that adds a solid border to all extra pixels outside the bounds of the input.  |  |
 | drop_shadow.shader | A shader that adds a basic drop shadow to the input. Note that this is done with a simple uniform blur, so it won't look quite as good as a proper Gaussian blur. This is also an O(N&sup2;) blur on the size of the blur, so be very conscious of your GPU usage with a large blur size. |  |
 | edge_detection.shader | A shader that detects edges of color. Includes support for alpha channels. |  |
