@@ -163,7 +163,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | luminance.shader | A shader that adds an alpha layer based on brightness instead of color. Extremely useful for making live video special effects, like replacing backgrounds or foregrounds. |  |
 | matrix.effect |  The cat is a glitch conversion from shadertoy. Updated with several configurable options.(1.2) |  |
 | multiply.shader | A shader that multiplies the input by another image specified in the parameters. Demonstrates the use of user-defined `texture2d` parameters. |  |
-| night_sky.shader |  Animated moon, clouds, stars background(1.2) |  |
+| night_sky.shader |  Animated moon, clouds, stars background(1.2) | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/8202deaa-7b60-417f-abd6-30c97b617b14) |
 | perlin_noise.effect | An effect generates perlin_noise, used to make water, clouds and glitch effects.  |  |
 | pulse.effect | An effect that varies the size of the output over time. This demonstrates a custom vertex shader that manipulates the position of the rendered vertices based on user data. Note that moving the vertices in the vertex shader will not affect the logical size of the source in OBS, and this may mean that pixels outside the source's  bounds will get cut off by later filters in the filter chain. |  |
 | rainbow.shader | Creates Rainbow effects, animated, rotating, horizontal or vertical. This is an expensive process and limiters are implemented. |  |
