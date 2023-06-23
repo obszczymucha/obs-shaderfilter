@@ -146,8 +146,8 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | box-blur.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/076efaca-c8fa-4e08-8906-46fde354dbb8) |
 | bloom.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/567e5dc4-ec20-42fa-a344-2be1e6516b01) |
 | burn.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/8d703243-2db3-4fc1-8c2f-836d61fcee13) |
-| call_shaded.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/d07aa2ef-05fc-407f-82ab-448f0aca8730) |
 | cartoon.effect | Simple Cartooning based on hue and steps of detail value. | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/17d272f0-b692-4452-b982-522a98d7a1f5) |
+| cell_shaded.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/d07aa2ef-05fc-407f-82ab-448f0aca8730) |
 | Chroma+UV-Distortion.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/c0db01c3-1e87-450c-9b4f-56a6e61a07b1) |
 | chromatic-aberration.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/ab99dc36-b9c2-405d-b9ca-3216866003fa) |
 | border.shader | A shader that adds a solid border to all extra pixels outside the bounds of the input.  |  |
