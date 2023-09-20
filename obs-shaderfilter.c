@@ -21,68 +21,61 @@
 
 #include "version.h"
 
-/* clang-format off */
+#define nullptr ((void *)0)
 
-#define nullptr ((void*)0)
-
-static const char *effect_template_begin =
-"\r\
-uniform float4x4 ViewProj;\r\
-uniform texture2d image;\r\
-\r\
-uniform float2 uv_offset;\r\
-uniform float2 uv_scale;\r\
-uniform float2 uv_pixel_interval;\r\
-uniform float2 uv_size;\r\
-uniform float rand_f;\r\
-uniform float rand_instance_f;\r\
-uniform float rand_activation_f;\r\
-uniform float elapsed_time;\r\
-uniform int loops;\r\
-uniform float local_time;\r\
-\r\
-sampler_state textureSampler{\r\
-	Filter = Linear;\r\
-	AddressU = Border;\r\
-	AddressV = Border;\r\
-	BorderColor = 00000000;\r\
-};\r\
-\r\
-struct VertData {\r\
-	float4 pos : POSITION;\r\
-	float2 uv : TEXCOORD0;\r\
-};\r\
-\r\
-VertData mainTransform(VertData v_in)\r\
-{\r\
-	VertData vert_out;\r\
-	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);\r\
-	vert_out.uv = v_in.uv * uv_scale + uv_offset;\r\
-	return vert_out;\r\
-}\r\
-\r\
+static const char *effect_template_begin = "\n\
+uniform float4x4 ViewProj;\n\
+uniform texture2d image;\n\
+\n\
+uniform float2 uv_offset;\n\
+uniform float2 uv_scale;\n\
+uniform float2 uv_pixel_interval;\n\
+uniform float2 uv_size;\n\
+uniform float rand_f;\n\
+uniform float rand_instance_f;\n\
+uniform float rand_activation_f;\n\
+uniform float elapsed_time;\n\
+uniform int loops;\n\
+uniform float local_time;\n\
+\n\
+sampler_state textureSampler{\n\
+	Filter = Linear;\n\
+	AddressU = Border;\n\
+	AddressV = Border;\n\
+	BorderColor = 00000000;\n\
+};\n\
+\n\
+struct VertData {\n\
+	float4 pos : POSITION;\n\
+	float2 uv : TEXCOORD0;\n\
+};\n\
+\n\
+VertData mainTransform(VertData v_in)\n\
+{\n\
+	VertData vert_out;\n\
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);\n\
+	vert_out.uv = v_in.uv * uv_scale + uv_offset;\n\
+	return vert_out;\n\
+}\n\
+\n\
 ";
 
-static const char *effect_template_default_image_shader =
-"\r\
-float4 mainImage(VertData v_in) : TARGET\r\
-{\r\
-	return image.Sample(textureSampler, v_in.uv);\r\
-}\r\
+static const char *effect_template_default_image_shader = "\n\
+float4 mainImage(VertData v_in) : TARGET\n\
+{\n\
+	return image.Sample(textureSampler, v_in.uv);\n\
+}\n\
 ";
 
-static const char *effect_template_end =
-"\r\
-technique Draw\r\
-{\r\
-	pass\r\
-	{\r\
-		vertex_shader = mainTransform(v_in);\r\
-		pixel_shader = mainImage(v_in);\r\
-	}\r\
+static const char *effect_template_end = "\n\
+technique Draw\n\
+{\n\
+	pass\n\
+	{\n\
+		vertex_shader = mainTransform(v_in);\n\
+		pixel_shader = mainImage(v_in);\n\
+	}\n\
 }";
-
-/* clang-format on */
 
 struct effect_param_data {
 	struct dstr name;
@@ -1254,10 +1247,35 @@ static void shader_filter_defaults(obs_data_t *settings)
 				    effect_template_default_image_shader);
 }
 
+static enum gs_color_space
+shader_filter_get_color_space(void *data, size_t count,
+			      const enum gs_color_space *preferred_spaces)
+{
+	const enum gs_color_space potential_spaces[] = {
+		GS_CS_SRGB,
+		GS_CS_SRGB_16F,
+		GS_CS_709_EXTENDED,
+	};
+
+	struct shader_filter_data *filter = data;
+	const enum gs_color_space source_space = obs_source_get_color_space(
+		obs_filter_get_target(filter->context),
+		OBS_COUNTOF(potential_spaces), potential_spaces);
+
+	enum gs_color_space space = source_space;
+	for (size_t i = 0; i < count; ++i) {
+		space = preferred_spaces[i];
+		if (space == source_space)
+			break;
+	}
+
+	return space;
+}
+
 struct obs_source_info shader_filter = {
 	.id = "shader_filter",
 	.type = OBS_SOURCE_TYPE_FILTER,
-	.output_flags = OBS_SOURCE_VIDEO,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB,
 	.create = shader_filter_create,
 	.destroy = shader_filter_destroy,
 	.update = shader_filter_update,
@@ -1269,6 +1287,7 @@ struct obs_source_info shader_filter = {
 	.get_height = shader_filter_getheight,
 	.video_render = shader_filter_render,
 	.get_properties = shader_filter_properties,
+	.video_get_color_space = shader_filter_get_color_space,
 };
 
 OBS_DECLARE_MODULE()
