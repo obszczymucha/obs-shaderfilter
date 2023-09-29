@@ -150,6 +150,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | cell_shaded.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/d07aa2ef-05fc-407f-82ab-448f0aca8730) |
 | Chroma+UV-Distortion.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/c0db01c3-1e87-450c-9b4f-56a6e61a07b1) |
 | chromatic-aberration.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/ab99dc36-b9c2-405d-b9ca-3216866003fa) |
+| dynamic-mask.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/60bac8ea-f5be-4122-8ac7-542faf051c9f) |
 | border.shader | A shader that adds a solid border to all extra pixels outside the bounds of the input.  |  |
 | drop_shadow.shader | A shader that adds a basic drop shadow to the input. Note that this is done with a simple uniform blur, so it won't look quite as good as a proper Gaussian blur. This is also an O(N&sup2;) blur on the size of the blur, so be very conscious of your GPU usage with a large blur size. |  |
 | edge_detection.shader | A shader that detects edges of color. Includes support for alpha channels. |  |
@@ -158,6 +159,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | fire.shader |  A fire example converted from shadertoy with lots of added options. | [youtube example](https://youtu.be/jcTsC0zSNAs) |
 | gradient.shader |  This shader has a little brother *simple_gradient.shader*, but lets you choose three colors and animate gradients. |  |
 | glitch_analog.shader | A shader that creates glitch effects similar to analog signal issues. Includes support for alpha channel. |  |
+| halftone.shader | | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/e7a555ec-ae7c-4580-b9d2-14fde0b4992d) |
 | hexagon.shader | A shader that creates a grid of hexagons with several options for you to set. This is an example of making shapes. |  |
 | gaussian-simple.shader |  A simple gaussian shader for bluring. Really implements closer to a box shader. |  |
 | luminance.shader | A shader that adds an alpha layer based on brightness instead of color. Extremely useful for making live video special effects, like replacing backgrounds or foregrounds. |  |
@@ -180,7 +182,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | shake.effect | creates random screen glitch style shake. Keep the random_scale low for small (0.2-1) for small  jerky movements and larger for less often big jumps. |  |
 | spotlight.shader | Creates a stationary or animated spotlight effect with color options, speed of animation and glitch |  |
 | shine.shader | Add shine / glow to any element, use the transition luma wipes (obs-studio\plugins\obs-transitions\data\luma_wipes *SOME NEW WIPES INCLUDED IN THIS RELEASE ZIP*) or create your own, also includes a glitch (using rand_f), hide/reveal, reverse and ease, start adjustment and stop adjustment |  |
-| vignetting.shader | A shader that reduces opacity further from the center of the image. inner radius is the start and outer radius is the end. suggested default settings is opacity 0.5, innerRadius = 0.5, outerRadius = 1.2 |  |
+| vignetting.shader | A shader that reduces opacity further from the center of the image. inner radius is the start and outer radius is the end. suggested default settings is opacity 0.5, innerRadius = 0.5, outerRadius = 1.2 | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/b7d32bb9-014d-4152-9be1-8bdb498121f0) |
 | zoom_blur.shader | A shader that creates a zoom with blur effect based on a number of samples and magnitude of each sample. It also includes an animation with or without easing and a glitch option. Set speed to zero to not use animation. Suggested values are 15 samples and 30-50 magnitude. |  |
 
 
