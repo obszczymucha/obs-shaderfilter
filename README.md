@@ -61,13 +61,15 @@ in the properties window to have their values set. Currently, only `int`, `float
 parameters are supported. (`float4` parameters will be interpreted by the properties window as colors.) `string` is used for 
 notes and instructions, but could be used in an effect or shader. Variable names are displayed in the GUI with underscore replaced with space `uniform float Variable_Name` becomes `Variable Name`.
 
-Version 2.0 and up support setting, label, widget_type, minimum, maximum, step using annotations.
+Version 2.0 and up support setting label, widget_type, minimum, maximum, step using annotations.
+Version 2.1 and up support setting group using annotations.
 A slider that has a minimum of -1.0, maximum of 1.0, and a step size of 0.01:
 ```
 // Contrast from -1.0 to 1.0
 uniform float Contrast<
   string label = "Contrast Adjustment";
   string widget_type = "slider";
+  string group = "Group";
   float minimum = -1.0;
   float maximum = 1.0;
   float step = 0.01;
