@@ -144,23 +144,23 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | ascii.shader |  a little example of ascii art |  |
 | background_removal.effect |  simple implementation of background removal. Optional color space corrections |  |
 | blink.shader | A shader that fades the opacity of the output in and out over time, with a configurable speed multiplier. Demonstrates the user of the `elapsed_time` parameter. |  |
-| bloom.shader / glow.shader |  simple shaders to add glow or bloom effects, the glow shader has some additional options for animation |  |
+| bloom.shader |  simple shaders to add bloom effects | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/567e5dc4-ec20-42fa-a344-2be1e6516b01) |
+| border.shader | A shader that adds a solid border to all extra pixels outside the bounds of the input.  |  |
 | box-blur.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/076efaca-c8fa-4e08-8906-46fde354dbb8) |
-| bloom.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/567e5dc4-ec20-42fa-a344-2be1e6516b01) |
 | burn.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/8d703243-2db3-4fc1-8c2f-836d61fcee13) |
 | cartoon.effect | Simple Cartooning based on hue and steps of detail value. | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/17d272f0-b692-4452-b982-522a98d7a1f5) |
 | cell_shaded.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/d07aa2ef-05fc-407f-82ab-448f0aca8730) |
 | Chroma+UV-Distortion.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/c0db01c3-1e87-450c-9b4f-56a6e61a07b1) |
 | chromatic-aberration.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/ab99dc36-b9c2-405d-b9ca-3216866003fa) |
-| dynamic-mask.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/60bac8ea-f5be-4122-8ac7-542faf051c9f) |
-| border.shader | A shader that adds a solid border to all extra pixels outside the bounds of the input.  |  |
 | drop_shadow.shader | A shader that adds a basic drop shadow to the input. Note that this is done with a simple uniform blur, so it won't look quite as good as a proper Gaussian blur. This is also an O(N&sup2;) blur on the size of the blur, so be very conscious of your GPU usage with a large blur size. |  |
+| dynamic-mask.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/60bac8ea-f5be-4122-8ac7-542faf051c9f) |
 | edge_detection.shader | A shader that detects edges of color. Includes support for alpha channels. |  |
 | filter_template.effect | A copy of the default effect used by the plugin, which simply renders the input directly to the output after scaling UVs to reflect any extra border pixels. This is useful as a starting point for developing new effects, especially those that might need a custom vertex shader. (Note that modifying this file will  not affect the internal effect template used by the plugin.) |  |
 | filter_template.shader | A copy of the default shader used by the plugin, which simply renders the input directly to the output after scaling UVs to reflect any extra border pixels. This is useful as a starting point for developing new pixel shaders. (Note that modifying this file will not affect the internal effect template used by the plugin.) |  |
-| fire.shader |  A fire example converted from shadertoy with lots of added options. | [youtube example](https://youtu.be/jcTsC0zSNAs) |
-| gradient.shader |  This shader has a little brother *simple_gradient.shader*, but lets you choose three colors and animate gradients. |  |
+| fire.shader | A fire example converted from shadertoy with lots of added options. | [youtube example](https://youtu.be/jcTsC0zSNAs) |
+| glow.shader | simple shaders to add glow effects, with some additional options for animation |  |
 | glitch_analog.shader | A shader that creates glitch effects similar to analog signal issues. Includes support for alpha channel. |  |
+| gradient.shader |  This shader has a little brother *simple_gradient.shader*, but lets you choose three colors and animate gradients. |  |
 | halftone.shader | | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/e7a555ec-ae7c-4580-b9d2-14fde0b4992d) |
 | hexagon.shader | A shader that creates a grid of hexagons with several options for you to set. This is an example of making shapes. |  |
 | gaussian-simple.shader |  A simple gaussian shader for bluring. Really implements closer to a box shader. |  |
@@ -176,6 +176,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | repeat.effect | Duplicates the input video as many times as you like and organizes on the screen. |  |
 | repeat_texture.effect | As above, but add a texture input to repeat instead of the input source. |  |
 | rgb_color_wheel.shader | A rotatable RGB color wheel! |  |
+| rgb_split.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/ddca6372-1ee6-495a-be52-4b6cc27be89e) |
 | rotatoe.effect | A test rotation effect |  |
 | rounded_rect.shader | A shader that rounds the corners of the input, optionally adding a border outside the rounded edges. |  |
 | rounded_stroke.shader | A shader that rounds the corners of the input, optionally adding a border outside the rounded edges. Updated by Exeldro. Several shaders have been upgraded with Apply To Specific Color for you to animate borders. | [https://youtu.be/J8mQIEKvWt0](https://youtu.be/J8mQIEKvWt0) |
