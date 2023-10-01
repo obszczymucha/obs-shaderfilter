@@ -430,8 +430,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 						(const char *)
 							gs_effect_get_default_val(
 								annotation));
-				} else if (strcmp(info.name, "group") ==
-						   0 &&
+				} else if (strcmp(info.name, "group") == 0 &&
 					   info.type ==
 						   GS_SHADER_PARAM_STRING) {
 					dstr_copy(
@@ -639,7 +638,12 @@ static bool add_source_to_list(void *data, obs_source_t *source)
 {
 	obs_property_t *p = data;
 	const char *name = obs_source_get_name(source);
-	obs_property_list_add_string(p, name, name);
+	size_t count = obs_property_list_item_count(p);
+	size_t idx = 0;
+	while (idx < count &&
+	       strcmp(name, obs_property_list_item_string(p, idx)) > 0)
+		idx++;
+	obs_property_list_insert_string(p, idx, name, name);
 	return true;
 }
 
@@ -731,7 +735,8 @@ static obs_properties_t *shader_filter_properties(void *data)
 		obs_properties_t *group = NULL;
 		if (group_name && strlen(group_name)) {
 			for (size_t i = 0; i < groups.num; i++) {
-				const char *n = obs_property_name(groups.array[i]);
+				const char *n =
+					obs_property_name(groups.array[i]);
 				if (strcmp(n, group_name) == 0) {
 					group = obs_property_group_content(
 						groups.array[i]);
@@ -739,10 +744,9 @@ static obs_properties_t *shader_filter_properties(void *data)
 			}
 			if (!group) {
 				group = obs_properties_create();
-				obs_property_t* p = obs_properties_add_group(props, group_name,
-							 group_name,
-							 OBS_GROUP_NORMAL,
-							 group);
+				obs_property_t *p = obs_properties_add_group(
+					props, group_name, group_name,
+					OBS_GROUP_NORMAL, group);
 				da_push_back(groups, &p);
 			}
 		}
@@ -831,9 +835,9 @@ static obs_properties_t *shader_filter_properties(void *data)
 					OBS_COMBO_TYPE_EDITABLE,
 					OBS_COMBO_FORMAT_STRING);
 				dstr_free(&sources_name);
-				obs_property_list_add_string(p, "", "");
 				obs_enum_sources(add_source_to_list, p);
 				obs_enum_scenes(add_source_to_list, p);
+				obs_property_list_insert_string(p, 0, "", "");
 
 			} else if (widget_type != NULL &&
 				   strcmp(widget_type, "file") == 0) {
@@ -1309,7 +1313,8 @@ shader_filter_get_color_space(void *data, size_t count,
 struct obs_source_info shader_filter = {
 	.id = "shader_filter",
 	.type = OBS_SOURCE_TYPE_FILTER,
-	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB | OBS_SOURCE_CUSTOM_DRAW,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB |
+			OBS_SOURCE_CUSTOM_DRAW,
 	.create = shader_filter_create,
 	.destroy = shader_filter_destroy,
 	.update = shader_filter_update,
