@@ -884,6 +884,12 @@ static obs_properties_t *shader_filter_properties(void *data)
 	}
 	da_free(groups);
 	dstr_free(&examples_path);
+
+	obs_properties_add_text(
+		props, "plugin_info",
+		"<a href=\"https://obsproject.com/forum/resources/obs-shaderfilter.1736/\">obs-shaderfilter</a> (" PROJECT_VERSION
+		") by <a href=\"https://www.exeldro.com\">Exeldro</a>",
+		OBS_TEXT_INFO);
 	UNUSED_PARAMETER(data);
 	return props;
 }
