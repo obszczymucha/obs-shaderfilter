@@ -350,8 +350,17 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 		     "[obs-shaderfilter] Unable to create effect. Errors returned from parser:\n%s",
 		     (errors == NULL || strlen(errors) == 0 ? "(None)"
 							    : errors));
+		if (errors && strlen(errors)) {
+			obs_data_set_string(settings, "last_error", errors);
+		} else {
+			obs_data_set_string(
+				settings, "last_error",
+				obs_module_text("ShaderFilter.Unknown"));
+		}
 		bfree(errors);
 		goto end;
+	} else {
+		obs_data_unset_user_value(settings, "last_error");
 	}
 
 	// Store references to the new effect's parameters.
@@ -697,6 +706,20 @@ static obs_properties_t *shader_filter_properties(void *data)
 	obs_property_set_modified_callback(file_name,
 					   shader_filter_file_name_changed);
 
+	if (filter) {
+		obs_data_t *settings = obs_source_get_settings(filter->context);
+		const char *last_error =
+			obs_data_get_string(settings, "last_error");
+		if (last_error && strlen(last_error)) {
+			obs_property_t *error = obs_properties_add_text(
+				props, "last_error",
+				obs_module_text("ShaderFilter.Error"),
+				OBS_TEXT_INFO);
+			obs_property_text_set_info_type(error,
+							OBS_TEXT_INFO_ERROR);
+		}
+		obs_data_release(settings);
+	}
 	obs_property_t *use_shader_elapsed_time = obs_properties_add_bool(
 		props, "use_shader_elapsed_time",
 		obs_module_text("ShaderFilter.UseShaderElapsedTime"));
@@ -890,7 +913,6 @@ static obs_properties_t *shader_filter_properties(void *data)
 		"<a href=\"https://obsproject.com/forum/resources/obs-shaderfilter.1736/\">obs-shaderfilter</a> (" PROJECT_VERSION
 		") by <a href=\"https://www.exeldro.com\">Exeldro</a>",
 		OBS_TEXT_INFO);
-	UNUSED_PARAMETER(data);
 	return props;
 }
 
