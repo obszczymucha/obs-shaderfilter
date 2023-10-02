@@ -141,7 +141,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | --- | --- | --- |
 | animated_texture.effect | Animates a texture with polar sizing and color options |  |
 | alpha-gaming-bent-camera.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/5fb6fec8-fc1b-46eb-96aa-17ce37a7ca20) |
-| ascii.shader |  a little example of ascii art |  |
+| ascii.shader | a little example of ascii art | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/682ad2d3-d32a-464e-a3af-0791ba0fc829) |
 | background_removal.effect |  simple implementation of background removal. Optional color space corrections |  |
 | blink.shader | A shader that fades the opacity of the output in and out over time, with a configurable speed multiplier. Demonstrates the user of the `elapsed_time` parameter. |  |
 | bloom.shader |  simple shaders to add bloom effects | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/567e5dc4-ec20-42fa-a344-2be1e6516b01) |
@@ -169,6 +169,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | multiply.shader | A shader that multiplies the input by another image specified in the parameters. Demonstrates the use of user-defined `texture2d` parameters. |  |
 | night_sky.shader |  Animated moon, clouds, stars background(1.2) | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/8202deaa-7b60-417f-abd6-30c97b617b14) |
 | perlin_noise.effect | An effect generates perlin_noise, used to make water, clouds and glitch effects.  |  |
+| pie-chart.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/bf44b9aa-23e5-4261-a0f8-b287d3012db7) |
 | pulse.effect | An effect that varies the size of the output over time. This demonstrates a custom vertex shader that manipulates the position of the rendered vertices based on user data. Note that moving the vertices in the vertex shader will not affect the logical size of the source in OBS, and this may mean that pixels outside the source's  bounds will get cut off by later filters in the filter chain. |  |
 | rainbow.shader | Creates Rainbow effects, animated, rotating, horizontal or vertical. This is an expensive process and limiters are implemented. |  |
 | rectangular_drop_shadow.shader | A shader that renders an optimized drop shadow for sources that are opaque and rectangular. Pixels inside the bounds of the input are treated as solid; pixels outside are treated as opaque. The complexity of the blur does not increase with its size, so you should be able to make your blur size as large as you like wtihout affecting GPU load.  |  |
