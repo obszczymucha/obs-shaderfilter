@@ -988,7 +988,11 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 				obs_data_set_default_int(settings, param_name,
 							 0xffffffff);
 			}
-			param->value.i = obs_data_get_int(settings, param_name);
+			uint32_t c = (uint32_t)obs_data_get_int(settings,
+								param_name);
+			struct vec4 color;
+			vec4_from_rgba_srgb(&color, c);
+			param->value.i = vec4_to_rgba(&color);
 			break;
 		}
 		case GS_SHADER_PARAM_TEXTURE:
@@ -1317,25 +1321,17 @@ static enum gs_color_space
 shader_filter_get_color_space(void *data, size_t count,
 			      const enum gs_color_space *preferred_spaces)
 {
+	UNUSED_PARAMETER(count);
+	UNUSED_PARAMETER(preferred_spaces);
+	struct shader_filter_data *filter = data;
+	obs_source_t *target = obs_filter_get_target(filter->context);
 	const enum gs_color_space potential_spaces[] = {
 		GS_CS_SRGB,
 		GS_CS_SRGB_16F,
 		GS_CS_709_EXTENDED,
 	};
-
-	struct shader_filter_data *filter = data;
-	const enum gs_color_space source_space = obs_source_get_color_space(
-		obs_filter_get_target(filter->context),
-		OBS_COUNTOF(potential_spaces), potential_spaces);
-
-	enum gs_color_space space = source_space;
-	for (size_t i = 0; i < count; ++i) {
-		space = preferred_spaces[i];
-		if (space == source_space)
-			break;
-	}
-
-	return space;
+	return obs_source_get_color_space(target, OBS_COUNTOF(potential_spaces),
+					  potential_spaces);
 }
 
 struct obs_source_info shader_filter = {
