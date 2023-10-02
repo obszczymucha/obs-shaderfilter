@@ -200,12 +200,12 @@ uniform float alpha_multiplier<
 
 float4 mainImage(VertData v_in) : TARGET
 {
-	float4 input = input_source.Sample(textureSampler, v_in.uv);
+	float4 input_color = input_source.Sample(textureSampler, v_in.uv);
     float4 mask;
-    mask.r = (red_base_value + red_red_input_value * input.r + red_green_input_value * input.g + red_blue_input_value * input.b + red_alpha_input_value * input.a) * red_multiplier;
-    mask.g = (green_base_value + green_red_input_value * input.r + green_green_input_value * input.g + green_blue_input_value * input.b + green_alpha_input_value * input.a) * green_multiplier;
-    mask.b = (blue_base_value + blue_red_input_value * input.r + blue_green_input_value * input.g + blue_blue_input_value * input.b + blue_alpha_input_value * input.a) * blue_multiplier;
-    mask.a = (alpha_base_value + alpha_red_input_value * input.r + alpha_green_input_value * input.g + alpha_blue_input_value * input.b + alpha_alpha_input_value * input.a) * alpha_multiplier;
+    mask.r = (red_base_value + red_red_input_value * input_color.r + red_green_input_value * input_color.g + red_blue_input_value * input_color.b + red_alpha_input_value * input_color.a) * red_multiplier;
+    mask.g = (green_base_value + green_red_input_value * input_color.r + green_green_input_value * input_color.g + green_blue_input_value * input_color.b + green_alpha_input_value * input_color.a) * green_multiplier;
+    mask.b = (blue_base_value + blue_red_input_value * input_color.r + blue_green_input_value * input_color.g + blue_blue_input_value * input_color.b + blue_alpha_input_value * input_color.a) * blue_multiplier;
+    mask.a = (alpha_base_value + alpha_red_input_value * input_color.r + alpha_green_input_value * input_color.g + alpha_blue_input_value * input_color.b + alpha_alpha_input_value * input_color.a) * alpha_multiplier;
 	float4 base = image.Sample(textureSampler, v_in.uv);
 	return base * mask;
 }
