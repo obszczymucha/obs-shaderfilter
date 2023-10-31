@@ -186,8 +186,7 @@ load_shader_from_file(const char *file_name) // add input of visited files
 	char *file_ptr = os_quick_read_utf8_file(file_name);
 	if (file_ptr == NULL)
 		return NULL;
-	char *file = bstrdup(os_quick_read_utf8_file(file_name));
-	char **lines = strlist_split(file, '\n', true);
+	char **lines = strlist_split(file_ptr, '\n', true);
 	struct dstr shader_file;
 	dstr_init(&shader_file);
 
@@ -234,7 +233,7 @@ load_shader_from_file(const char *file_name) // add input of visited files
 	           else
 		       concat line onto shader_file
 	*/
-	bfree(file);
+	bfree(file_ptr);
 	strlist_free(lines);
 	return shader_file.array;
 }
@@ -414,82 +413,69 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 				gs_eparam_t *annotation =
 					gs_param_get_annotation_by_idx(
 						param, annotation_index);
+				void *annotation_default =
+					gs_effect_get_default_val(annotation);
 				gs_effect_get_param_info(annotation, &info);
 				if (strcmp(info.name, "name") == 0 &&
 				    info.type == GS_SHADER_PARAM_STRING) {
-					dstr_copy(
-						&cached_data->display_name,
-						(const char *)
-							gs_effect_get_default_val(
-								annotation));
+					dstr_copy(&cached_data->display_name,
+						  (const char *)
+							  annotation_default);
 				} else if (strcmp(info.name, "label") == 0 &&
 					   info.type ==
 						   GS_SHADER_PARAM_STRING) {
-					dstr_copy(
-						&cached_data->display_name,
-						(const char *)
-							gs_effect_get_default_val(
-								annotation));
+					dstr_copy(&cached_data->display_name,
+						  (const char *)
+							  annotation_default);
 				} else if (strcmp(info.name, "widget_type") ==
 						   0 &&
 					   info.type ==
 						   GS_SHADER_PARAM_STRING) {
-					dstr_copy(
-						&cached_data->widget_type,
-						(const char *)
-							gs_effect_get_default_val(
-								annotation));
+					dstr_copy(&cached_data->widget_type,
+						  (const char *)
+							  annotation_default);
 				} else if (strcmp(info.name, "group") == 0 &&
 					   info.type ==
 						   GS_SHADER_PARAM_STRING) {
-					dstr_copy(
-						&cached_data->group,
-						(const char *)
-							gs_effect_get_default_val(
-								annotation));
+					dstr_copy(&cached_data->group,
+						  (const char *)
+							  annotation_default);
 				} else if (strcmp(info.name, "minimum") == 0) {
 					if (info.type ==
 					    GS_SHADER_PARAM_FLOAT) {
-						cached_data->minimum.f =
-							*(float *)gs_effect_get_default_val(
-								annotation);
+						cached_data->minimum.f = *(
+							float *)annotation_default;
 					} else if (info.type ==
 						   GS_SHADER_PARAM_INT) {
-						cached_data->minimum.i =
-							*(int *)gs_effect_get_default_val(
-								annotation);
+						cached_data->minimum.i = *(
+							int *)annotation_default;
 					}
 				} else if (strcmp(info.name, "maximum") == 0) {
 					if (info.type ==
 					    GS_SHADER_PARAM_FLOAT) {
-						cached_data->maximum.f =
-							*(float *)gs_effect_get_default_val(
-								annotation);
+						cached_data->maximum.f = *(
+							float *)annotation_default;
 					} else if (info.type ==
 						   GS_SHADER_PARAM_INT) {
-						cached_data->maximum.i =
-							*(int *)gs_effect_get_default_val(
-								annotation);
+						cached_data->maximum.i = *(
+							int *)annotation_default;
 					}
 				} else if (strcmp(info.name, "step") == 0) {
 					if (info.type ==
 					    GS_SHADER_PARAM_FLOAT) {
-						cached_data->step.f =
-							*(float *)gs_effect_get_default_val(
-								annotation);
+						cached_data->step.f = *(
+							float *)annotation_default;
 					} else if (info.type ==
 						   GS_SHADER_PARAM_INT) {
-						cached_data->step.i =
-							*(int *)gs_effect_get_default_val(
-								annotation);
+						cached_data->step.i = *(
+							int *)annotation_default;
 					}
 				} else if (strncmp(info.name, "option_", 7) ==
 					   0) {
 					int id = atoi(info.name + 7);
 					if (info.type == GS_SHADER_PARAM_INT) {
-						int val =
-							*(int *)gs_effect_get_default_val(
-								annotation);
+						int val = *(
+							int *)annotation_default;
 						int *cd = da_insert_new(
 							cached_data
 								->option_values,
@@ -501,8 +487,8 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 						struct dstr val = {0};
 						dstr_copy(
 							&val,
-							(const char *)gs_effect_get_default_val(
-								annotation));
+							(const char *)
+								annotation_default);
 						struct dstr *cs = da_insert_new(
 							cached_data
 								->option_labels,
@@ -510,6 +496,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 						*cs = val;
 					}
 				}
+				bfree(annotation_default);
 			}
 		}
 	}
@@ -944,42 +931,34 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			(filter->stored_param_list.array + param_index);
 		//gs_eparam_t *annot = gs_param_get_annotation_by_idx(param->param, param_index);
 		const char *param_name = param->name.array;
-		struct dstr display_name = {0};
 		struct dstr sources_name = {0};
 		obs_source_t *source = NULL;
-		dstr_ncat(&display_name, param_name, param->name.len);
-		dstr_replace(&display_name, "_", " ");
-
+		void *default_value = gs_effect_get_default_val(param->param);
 		switch (param->type) {
 		case GS_SHADER_PARAM_BOOL:
-			if (gs_effect_get_default_val(param->param) != NULL)
+			if (default_value != NULL)
 				obs_data_set_default_bool(
 					settings, param_name,
-					*(bool *)gs_effect_get_default_val(
-						param->param));
+					*(bool *)default_value);
 			param->value.i =
 				obs_data_get_bool(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_FLOAT:
-			if (gs_effect_get_default_val(param->param) != NULL)
+			if (default_value != NULL)
 				obs_data_set_default_double(
 					settings, param_name,
-					*(float *)gs_effect_get_default_val(
-						param->param));
+					*(float *)default_value);
 			param->value.f =
 				obs_data_get_double(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_INT:
-			if (gs_effect_get_default_val(param->param) != NULL)
-				obs_data_set_default_int(
-					settings, param_name,
-					*(int *)gs_effect_get_default_val(
-						param->param));
+			if (default_value != NULL)
+				obs_data_set_default_int(settings, param_name,
+							 *(int *)default_value);
 			param->value.i = obs_data_get_int(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_VEC4: { // Assumed to be a color.
-			struct vec4 *rgba =
-				gs_effect_get_default_val(param->param);
+			struct vec4 *rgba = default_value;
 			if (rgba != NULL) {
 				obs_data_set_default_int(settings, param_name,
 							 vec4_to_rgba(rgba));
@@ -1021,8 +1000,7 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 					gs_image_file_free(param->image);
 					obs_leave_graphics();
 				}
-				const char *path =
-					gs_effect_get_default_val(param->param);
+				const char *path = default_value;
 				if (path && strlen(path)) {
 					if (os_file_exists(path)) {
 						char *abs_path =
@@ -1069,16 +1047,16 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			}
 			break;
 		case GS_SHADER_PARAM_STRING:
-			if (gs_effect_get_default_val(param->param) != NULL)
+			if (default_value != NULL)
 				obs_data_set_default_string(
 					settings, param_name,
-					(const char *)gs_effect_get_default_val(
-						param->param));
+					(const char *)default_value);
 			param->value.string = (char *)obs_data_get_string(
 				settings, param_name);
 			break;
 		default:;
 		}
+		bfree(default_value);
 	}
 }
 
@@ -1192,8 +1170,6 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 			(filter->stored_param_list.array + param_index);
 		struct vec4 color;
 		obs_source_t *source = NULL;
-		//void *defvalue = gs_effect_get_default_val(param->param);
-		//float tempfloat;
 
 		switch (param->type) {
 		case GS_SHADER_PARAM_BOOL:
