@@ -160,9 +160,11 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | fire.shader | A fire example converted from shadertoy with lots of added options. | [youtube example](https://youtu.be/jcTsC0zSNAs) |
 | glow.shader | simple shaders to add glow effects, with some additional options for animation |  |
 | glitch_analog.shader | A shader that creates glitch effects similar to analog signal issues. Includes support for alpha channel. |  |
+| gb-camera.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/b8b85e0c-918b-4fd4-bc0c-6161569b6610) |
 | gradient.shader |  This shader has a little brother *simple_gradient.shader*, but lets you choose three colors and animate gradients. |  |
 | halftone.shader | | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/e7a555ec-ae7c-4580-b9d2-14fde0b4992d) |
 | hexagon.shader | A shader that creates a grid of hexagons with several options for you to set. This is an example of making shapes. |  |
+| intensity-scope.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/c4fd64ab-64d1-42b0-9929-ba1e3d7a6466) |
 | gaussian-simple.shader |  A simple gaussian shader for bluring. Really implements closer to a box shader. |  |
 | luminance.shader | A shader that adds an alpha layer based on brightness instead of color. Extremely useful for making live video special effects, like replacing backgrounds or foregrounds. |  |
 | matrix.effect |  The cat is a glitch conversion from shadertoy. Updated with several configurable options.(1.2) | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/79d2b028-4ea8-405d-a560-846f3ea78357) |
@@ -174,6 +176,7 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | pixelation.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/88b9db62-9fc7-4a1a-b7a2-cf22355be390) |
 | pulse.effect | An effect that varies the size of the output over time. This demonstrates a custom vertex shader that manipulates the position of the rendered vertices based on user data. Note that moving the vertices in the vertex shader will not affect the logical size of the source in OBS, and this may mean that pixels outside the source's  bounds will get cut off by later filters in the filter chain. |  |
 | rainbow.shader | Creates Rainbow effects, animated, rotating, horizontal or vertical. This is an expensive process and limiters are implemented. | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/3aa68f8f-ea24-4e9d-a813-1769d9aaf507) |
+| rain-window.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/a5c60cfc-e98e-41cd-9e9a-e10367d7e1e0) |
 | rectangular_drop_shadow.shader | A shader that renders an optimized drop shadow for sources that are opaque and rectangular. Pixels inside the bounds of the input are treated as solid; pixels outside are treated as opaque. The complexity of the blur does not increase with its size, so you should be able to make your blur size as large as you like wtihout affecting GPU load.  |  |
 | remove_partial_pixels.shader | A shader that removes pixels with partial alpha, excellent for cleaning up green screens. |  |
 | repeat.effect | Duplicates the input video as many times as you like and organizes on the screen. | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/19ba6e94-af2a-472a-954d-3d9bdebde99e) |
@@ -191,10 +194,12 @@ I recommend *.shader* as they do not require `Use Effect File (.effect)` as pixe
 | spotlight.shader | Creates a stationary or animated spotlight effect with color options, speed of animation and glitch | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/f9aebc02-4da5-4d30-b2f3-a9d9d7511f9f) |
 | Swirl.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/722bc6fc-7c75-455f-a3bd-94607e621e74) |
 | thermal.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/f12e1040-51a6-4401-a84b-160f19c8f907) |
+| tv-crt-subpixel.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/38d06b91-e75b-4d76-82ee-e116d306a247) |
 | twist.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/6998bbee-8a44-4a5d-82b4-ca92f246e826) |
 | VCR.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/8e4b5663-2135-4a4e-b912-6e58a6c29628) |
 | VHS.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/c61ca22f-c62c-4b38-9c28-555e57e3951b) |
 | vignetting.shader | A shader that reduces opacity further from the center of the image. inner radius is the start and outer radius is the end. suggested default settings is opacity 0.5, innerRadius = 0.5, outerRadius = 1.2 | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/b7d32bb9-014d-4152-9be1-8bdb498121f0) |
+| voronoi-pixelation.shader |  | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/102317d5-ba5f-48bf-8666-c1d2b5850813) |
 | ZigZag.shader | | ![image](https://github.com/exeldro/obs-shaderfilter/assets/5457024/3e3006cd-9f2a-4a7e-905c-50d80173e861) |
 | zoom_blur.shader | A shader that creates a zoom with blur effect based on a number of samples and magnitude of each sample. It also includes an animation with or without easing and a glitch option. Set speed to zero to not use animation. Suggested values are 15 samples and 30-50 magnitude. |  |
 
