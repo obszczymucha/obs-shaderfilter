@@ -60,14 +60,14 @@ float4 mainImage(VertData v_in) : TARGET
 	
     float Pi = 6.28318530718; // Pi*2
        
-    float Directions = (float)Strength * 4.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
-    float Quality = (float)Strength; // BLUR QUALITY (Default 4.0 - More is better but slower)
-    float Size = (float)Strength * (float)Strength; // BLUR SIZE (Radius)
+    float Directions = float(Strength) * 4.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+    float Quality = float(Strength); // BLUR QUALITY (Default 4.0 - More is better but slower)
+    float Size = float(Strength) * float(Strength); // BLUR SIZE (Radius)
     
     float4 c = image.Sample(textureSampler, v_in.uv);
     float4 oc = c;
     float transparent = oc.a;
-    int count = 1.0;
+    int count = 1;
     float samples = oc.a;
     
     // Blur calculations

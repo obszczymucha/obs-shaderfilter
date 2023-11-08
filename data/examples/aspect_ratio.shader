@@ -12,7 +12,7 @@ uniform float2 uv_size;
 
 // variables
 uniform float4 borderColor = {0,0,0,0};
-float targetaspect = 16.0f / 9.0f;
+float targetaspect = 1.7777777777777777777777f; //16.0f / 9.0f;
 uniform string notes;
 
 sampler_state textureSampler {

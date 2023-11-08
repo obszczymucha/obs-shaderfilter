@@ -74,7 +74,7 @@ float4 mainImage(VertData v_in) : TARGET
     float4 c = image.Sample(textureSampler, v_in.uv);
     float4 oc = c;
     float transparent = oc.a;
-    int count = 1.0;
+    int count = 1;
     float samples = oc.a;
     
     // Blur calculations

@@ -337,12 +337,14 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	char *errors = NULL;
 
 	obs_enter_graphics();
+	int device_type = gs_get_device_type();
+	if (device_type == GS_DEVICE_OPENGL) {
+		dstr_replace(&effect_text, "[loop]", "");
+	}
 	if (filter->effect)
 		gs_effect_destroy(filter->effect);
 	filter->effect = gs_effect_create(effect_text.array, NULL, &errors);
 	obs_leave_graphics();
-
-	dstr_free(&effect_text);
 
 	if (filter->effect == NULL) {
 		blog(LOG_WARNING,
@@ -356,9 +358,11 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 				settings, "last_error",
 				obs_module_text("ShaderFilter.Unknown"));
 		}
+		dstr_free(&effect_text);
 		bfree(errors);
 		goto end;
 	} else {
+		dstr_free(&effect_text);
 		obs_data_unset_user_value(settings, "last_error");
 	}
 

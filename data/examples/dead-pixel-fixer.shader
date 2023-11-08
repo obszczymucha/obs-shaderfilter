@@ -40,12 +40,12 @@ float3 blur_dead_pixel(in float2 pos)
 float4 mainImage( VertData v_in ) : TARGET
 {
 	float2 uv = v_in.uv;
-	float2 pos = v_in.pos;
-	float2 dp_pos = clamp( float2(Dead_Pixel_X, Dead_Pixel_Y), 0.0, uv_size - 1);
+	float2 pos = v_in.pos.xy;
+	float2 dp_pos = clamp( float2(Dead_Pixel_X, Dead_Pixel_Y), float2(0.0,0.0), uv_size - 1);
 	float4 obstex = image.Sample(textureSampler, uv);
 	float3 color;
 
-	if( (uint)pos.x == (uint)dp_pos.x && (uint)pos.y == (uint)dp_pos.y ) {
+	if(floor(pos.x) == floor(dp_pos.x) && floor(pos.y) == floor(dp_pos.y) ) {
 		color = blur_dead_pixel(pos);
 	} else {
 		color.rgb = obstex.rgb;

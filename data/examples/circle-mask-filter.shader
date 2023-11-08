@@ -53,7 +53,6 @@ uniform bool Antialiasing = true;
 float4 mainImage( VertData v_in ) : TARGET
 {
 	float2 uv = v_in.uv;
-	float2 pos = v_in.pos;
 	float2 coffset = float2(Circle_Offset_X, Circle_Offset_Y)/uv_size;
 	float2 soffset = float2( Source_Offset_X, Source_Offset_Y )/uv_size;
 
@@ -68,7 +67,7 @@ float4 mainImage( VertData v_in ) : TARGET
 	float dist = distance(cuv,uv);
 	// Anti-aliased or pixelated edge
 	if( Antialiasing ) {
-		color.a = smoothstep( radius, (radius+(uv_pi)) - (uv_pi * AAwidth), dist);
+		color.a = smoothstep( radius, (radius+(uv_pi.x)) - (uv_pi.x * AAwidth), dist);
 	} else {
 		color.a = step( dist, radius );
 	}

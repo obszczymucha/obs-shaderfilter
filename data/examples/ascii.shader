@@ -60,13 +60,13 @@ float4 mainImage( VertData v_in ) : TARGET
 {
     float2 iResolution = uv_size*uv_scale;
     float2 pix = v_in.pos.xy;
-    float4 c = image.Sample(textureSampler, floor(pix/(scale*8.0))*(scale*8.0)/iResolution.xy);
+    float4 c = image.Sample(textureSampler, floor(pix/float2(scale*8.0,scale*8.0))*float2(scale*8.0,scale*8.0)/iResolution.xy);
 
     float gray = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
 	
     int n;
     int charset = clamp(character_set, 0, 1);
-	
+
     if (charset==0)
     {
         if (gray <= 0.2) n = 4096;     // .
@@ -88,7 +88,7 @@ float4 mainImage( VertData v_in ) : TARGET
         if (gray > 0.8)  n = 16301615; // B
     }
 
-    float2 p = mod(pix/(scale*4.0),2.0) - float2(1.0,1.0);
+    float2 p = mod(pix/float2(scale*4.0,scale*4.0),float2(2.0,2.0)) - float2(1.0,1.0);
 	
     if (monochrome)
     {
