@@ -45,6 +45,10 @@ uniform string Notes<
 float dot(float3 a, float3 b){
     return a.r*b.r+a.g*b.g+a.b*b.b;
 }
+
+float dot4(float4 a, float4 b){
+    return a.r*b.r+a.g*b.g+a.b*b.b+a.a*b.a;
+}
 float snap(float x, float snap)
 {
 	return snap * round(x / max(0.01,snap));
@@ -110,13 +114,29 @@ float simplex3d(float3 p) {
 	d *= w;
 
 	/* 3. return the sum of the four surflets */
-	return dot(d, float4(52.0, 52.0, 52.0, 52.0));
+	return dot4(d, float4(52.0, 52.0, 52.0, 52.0));
 }
 
 
 /* directional artifacts can be reduced by rotating each octave */
 float simplex3d_fractal(float3 m3) {
 	/* const matrices for 3d rotation */
+#ifdef OPENGL
+	float3x3 rot1 = float3x3(
+	float3(-0.37, 0.36, 0.85),
+	float3(-0.14, -0.93, 0.34),
+	float3(0.92, 0.01, 0.4 ));
+	float3x3 rot2 = float3x3(
+	float3(-0.55, -0.39, 0.74),
+	float3(0.33, -0.91, -0.24),
+	float3(0.77, 0.12, 0.63 ));
+	float3x3 rot3 = float3x3(
+	float3(-0.71, 0.52, -0.47),
+	float3(-0.08, -0.72, -0.68),
+	float3(-0.7, -0.45, 0.56 ));
+
+	float3 m = float3(m3.x, m3.y, m3.z);
+#else
 	float3x3 rot1 = {
 	-0.37, 0.36, 0.85,
 	-0.14, -0.93, 0.34,
@@ -130,11 +150,12 @@ float simplex3d_fractal(float3 m3) {
 	-0.08, -0.72, -0.68,
 	-0.7, -0.45, 0.56 };
 
-	float3x1 m = {m3.x, m3.y, m3.z};
-	
-	return   0.5333333* simplex3d(m * rot1)
-		+ 0.2666667 * simplex3d(2.0 * m * rot2)
-		+ 0.1333333 * simplex3d(4.0 * m * rot3)
+	float3 m = {m3.x, m3.y, m3.z};
+#endif
+
+	return   0.5333333* simplex3d(mul(m, rot1))
+		+ 0.2666667 * simplex3d(2.0 * mul(m, rot2))
+		+ 0.1333333 * simplex3d(4.0 * mul(m, rot3))
 		+ 0.0666667 * simplex3d(8.0 * m);
 }
 
@@ -163,7 +184,7 @@ float4 mainImage(VertData v_in) : TARGET
 
 	//soften color
 	value = 0.5 + (0.5 * value);
-	float intensity = dot(float4(float3(value, value, value), pixel_alpha), float3(0.299, 0.587, 0.114));
+	float intensity = dot(float3(value, value, value), float3(0.299, 0.587, 0.114));
 
 	//use intensity to apply foreground and background colors
 	float4 r = lerp(float4(float3(value, value, value), pixel_alpha), Fore_Color, saturate(intensity));
