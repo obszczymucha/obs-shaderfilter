@@ -122,7 +122,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeXabs == 0){
         if(closedEdgeYabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeYabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (float(closedEdgeYabs) / float(border_thickness))*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return output;
@@ -131,7 +131,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeYabs == 0){
         if(closedEdgeXabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeXabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (float(closedEdgeXabs) / float(border_thickness))*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return output;
@@ -143,7 +143,7 @@ float4 mainImage(VertData v_in) : TARGET
     if(d<corner_radius){
         if(corner_radius-d <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((corner_radius-d)/ (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + ((corner_radius-d)/ float(border_thickness))*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
             return output;

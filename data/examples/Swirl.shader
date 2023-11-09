@@ -54,7 +54,7 @@ float4 mainImage(VertData v_in) : TARGET
     if (dist < radius)
     {
         float percent = (radius-dist)/(radius);
-        percent = inverse == 0 ? percent : 1 - percent;
+        percent = inverse == false ? percent : 1 - percent;
 
         float theta = percent * percent * radians(angle * (animate == true ? sin(elapsed_time) : 1.0));
         float s =  sin(theta);

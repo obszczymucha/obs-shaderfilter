@@ -45,7 +45,7 @@ float4 VoronoiPixelation(float2 uv, float pixH ){
     }
     float2 nPoint = pixExt + relClos + randomSpin(pixExt + relClos, 0.5) + random2(pixExt + relClos);
     nPoint = nPoint / pixH;
-    nPoint.x = nPoint.x * uv_scale ;
+    nPoint.x = nPoint.x * uv_scale.x ;
     
     return image.Sample(textureSampler, nPoint);
 }
@@ -73,7 +73,7 @@ float4 VoronoiPixelation2(float2 uv, float pixH ){
     }
     float2 nPoint = pixExt + relClos + random2(pixExt + relClos);
     nPoint = nPoint / pixH;
-    nPoint.x = nPoint.x * uv_scale;
+    nPoint.x = nPoint.x * uv_scale.x;
     
     return image.Sample(textureSampler, nPoint);
 }

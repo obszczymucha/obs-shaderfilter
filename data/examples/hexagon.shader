@@ -66,6 +66,16 @@ uniform string notes<
     string widget_type = "info";
 >= "Tiles:equilateral: around 12.33,nonequilateral: square rootable number. Distort of 1 is normal.";
 
+float mod(float x, float y)
+{
+    return x - y * floor(x/y);
+}
+
+float2 mod2(float2 x, float2 y)
+{
+    return x - y * floor(x/y);
+}
+
 // 0 on edges, 1 in non_edge
 float hex(float2 p) {
 	float xyratio = 1;
@@ -74,8 +84,8 @@ float hex(float2 p) {
 
 	// calc p 
 	p.x = mul(p.x,xyratio);
-	p.y += (floor(p.x) % 2.0)*0.5;
-	p = abs(((p % 1.0) - 0.5));
+	p.y += mod(floor(p.x) , 2.0)*0.5;
+	p = abs((mod2(p , float2(1.0, 1.0)) - 0.5));
 	return abs(max(p.x*1.5 + p.y, p.y*2.0) -1);
 }
 

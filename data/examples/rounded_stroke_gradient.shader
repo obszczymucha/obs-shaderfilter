@@ -56,10 +56,13 @@ uniform string notes<
 //     return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
 // }
 
-
+float mod(float x, float y)
+{
+    return x - y * floor(x/y);
+}
 
 float4 gradient(float c) {
-    c = c % 2.0;
+    c = mod(c , 2.0);
     if(c < 0.0f){
         c = c * -1.0;
     }
@@ -74,14 +77,14 @@ float4 gradient(float c) {
 
 float4 getBorderColor(float2 toCenter){
     float angle = atan2(toCenter.y ,toCenter.x );
-	float angleMod = (elapsed_time * rotation_speed % 18) / 9;
+	float angleMod = (elapsed_time * mod(float(rotation_speed) , 18.0)) / 9;
 	return gradient((angle / 3.14159265f) + angleMod);
 }
 
 float4 mainImage(VertData v_in) : TARGET
 {
     float2 st = v_in.uv * uv_scale;
-    float2 center_pixel_coordinates = float2(((float)center_width * 0.01), ((float)center_height * 0.01) );
+    float2 center_pixel_coordinates = float2((float(center_width) * 0.01), (float(center_height) * 0.01) );
     float2 toCenter = center_pixel_coordinates - st;
 
     float min_alpha = clamp(minimum_alpha_percent * .01, -1.0, 101.0);

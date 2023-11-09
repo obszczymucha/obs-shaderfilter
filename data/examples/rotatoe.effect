@@ -130,7 +130,7 @@ float4 mainImage(VertData v_in) : TARGET
 	if (Rotate_Pixels)
 	{
 		float2 center_pixel_coordinates = float2((center_width_percentage * 0.01), (center_height_percentage * 0.01) );
-		rgba = image.Sample(textureSampler, mul(v_in.uv - center_pixel_coordinates ,rotAxis(float3(Axis_X ,Axis_Y, Axis_Z ), (angle_degrees * t))).xy + center_pixel_coordinates);
+		rgba = image.Sample(textureSampler, mul(float3(v_in.uv - center_pixel_coordinates, 1.0), rotAxis(float3(Axis_X ,Axis_Y, Axis_Z ), (angle_degrees * t))).xy + center_pixel_coordinates);
 	}
 	if (Rotate_Colors)
 		rgba.rgb = mul(rgba.rgb, rotAxis(float3(Axis_X,Axis_Y,Axis_Z), (angle_degrees * t))).xyz;

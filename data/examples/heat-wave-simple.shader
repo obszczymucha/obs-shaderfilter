@@ -52,7 +52,7 @@ float4 mainImage( VertData v_in ) : TARGET
 
     // Time varying pixel color
     float jacked_time = Rate*elapsed_time;
-    float2 scale = 0.5;
+    float2 scale = float2(0.5, 0.5);
 	float str = clamp(Strength, -25.0, 25.0) * 0.01;
    	
     uv += str * sin(scale*jacked_time + length( uv ) * distort);

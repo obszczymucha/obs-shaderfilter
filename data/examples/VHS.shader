@@ -49,13 +49,13 @@ uniform bool Replace_Image_Color;
 uniform float4 Color_To_Replace;
 uniform bool Apply_To_Specific_Color;
 
-float dot(float2 a,float2 b){
+float dot2(float2 a,float2 b){
     return a.x*b.x+a.y*b.y;
 }
 
 float rand(float2 co)
 {
-    return frac(sin(dot(co.xy ,float2(12.9898,78.233))) * 43758.5453);
+    return frac(sin(dot2(co.xy ,float2(12.9898,78.233))) * 43758.5453);
 }
 
 float verticalBar(float pos, float uvY, float offset)
@@ -73,7 +73,7 @@ float modu(float x, float y)
 	return (x / y) - floor(x / y);
 }
 
-float dot(float4 a,float4 b){
+float dot4(float4 a,float4 b){
     return a.r*b.r+a.g*b.g+a.b*b.b+a.a*b.a;
 }
 
@@ -109,7 +109,7 @@ float4 mainImage(VertData v_in) : TARGET
     {
         color = image.Sample(textureSampler, v_in.uv);
         original_color = color;
-        float luma = dot(color, float4(0.30, 0.59, 0.11, 1.0));
+        float luma = dot4(color, float4(0.30, 0.59, 0.11, 1.0));
         if (Replace_Image_Color)
             color = float4(luma,luma,luma,luma);
         rgba = lerp(original_color, rgba * color, clamp(Alpha_Percentage * .01, 0, 1.0));

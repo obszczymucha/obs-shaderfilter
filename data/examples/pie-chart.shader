@@ -111,8 +111,13 @@ uniform float4 color_10 = {0.58,0.0,0.23,1.0};
 float4 mainImage(VertData v_in) : TARGET
 {
     const float pi = 3.14159265358979323846;
+#ifdef OPENGL
+    float[10] parts = float[10](part_1, part_2, part_3, part_4, part_5, part_6, part_7, part_8, part_9, part_10);
+    float4[10] colors = float4[10](color_1, color_2, color_3, color_4, color_5, color_6, color_7, color_8, color_9, color_10);
+#else
     float parts[] = {part_1, part_2, part_3, part_4, part_5, part_6, part_7, part_8, part_9, part_10};
     float4 colors[] = {color_1, color_2, color_3, color_4, color_5, color_6, color_7, color_8, color_9, color_10};
+#endif
     float2 center = float2(0.5, 0.5);
     float2 factor;
     if(uv_size.x < uv_size.y){

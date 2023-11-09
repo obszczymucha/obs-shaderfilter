@@ -60,7 +60,7 @@ float3 fract4(float4 v){
 
 float3 N13(float p) {
    //  from DAVE HOSKINS
-   float3 p3 = fract(float3(p, p, p) * float3(.1031,.11369,.13787));
+   float3 p3 = fract3(float3(p, p, p) * float3(.1031,.11369,.13787));
    p3 += dot(p3, p3.yzx + 19.19);
    return fract3(float3((p3.x + p3.y)*p3.z, (p3.x+p3.z)*p3.y, (p3.y+p3.z)*p3.x));
 }

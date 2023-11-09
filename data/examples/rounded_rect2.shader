@@ -44,24 +44,24 @@ float4 mainImage(VertData v_in) : TARGET
     if(pixel.a < alpha_cut_off){
         return float4(1.0,0.0,0.0,0.0);
     }
-    float check_dist = corner_radius;
+    float check_dist = float(corner_radius);
     if(border_thickness > check_dist)
         check_dist = border_thickness;
     if(image.Sample(textureSampler, v_in.uv + float2(check_dist*uv_pixel_interval.x,0)).a < alpha_cut_off){
-        closedEdgeX = check_dist;
+        closedEdgeX = int(check_dist);
     }else if(image.Sample(textureSampler, v_in.uv + float2(-check_dist*uv_pixel_interval.x,0)).a < alpha_cut_off){
-        closedEdgeX = -check_dist;
+        closedEdgeX = int(-check_dist);
     }
     if(image.Sample(textureSampler, v_in.uv + float2(0,check_dist*uv_pixel_interval.y)).a < alpha_cut_off){
-        closedEdgeY = check_dist;
+        closedEdgeY = int(check_dist);
     }else if(image.Sample(textureSampler, v_in.uv + float2(0,-check_dist*uv_pixel_interval.y)).a < alpha_cut_off){
-        closedEdgeY = -check_dist;
+        closedEdgeY = int(-check_dist);
     }
     if(closedEdgeX == 0 && closedEdgeY == 0){
         return pixel;
     }
     if(!faster_scan || closedEdgeX != 0){
-        [loop] for(int x = 1;x<check_dist ;x++){
+        [loop] for(int x = 1;float(x)<check_dist ;x++){
             if(image.Sample(textureSampler, v_in.uv + float2(x*uv_pixel_interval.x, 0)).a < alpha_cut_off){
                 closedEdgeX = x;
                 break;
@@ -89,10 +89,10 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeX == 0){
         if(closedEdgeYabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeYabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (float(closedEdgeYabs) / float(border_thickness))*(border_alpha_start-border_alpha_end);
             if(border_alpha_start < border_alpha_end){
                 pixel.rgb = pixel.rgb * (1.0 - fade_color.a) + fade_color.rgb * fade_color.a;
-                pixel.a = border_alpha_end + ((float)closedEdgeYabs / (float)border_thickness)*(pixel.a-border_alpha_end);
+                pixel.a = border_alpha_end + (float(closedEdgeYabs) / float(border_thickness))*(pixel.a-border_alpha_end);
                 return pixel;
             }
             return fade_color;
@@ -103,10 +103,10 @@ float4 mainImage(VertData v_in) : TARGET
     if(closedEdgeY == 0){
         if(closedEdgeXabs <= border_thickness){
             float4 fade_color = border_color;
-            fade_color.a = border_alpha_end + ((float)closedEdgeXabs / (float)border_thickness)*(border_alpha_start-border_alpha_end);
+            fade_color.a = border_alpha_end + (float(closedEdgeXabs) / float(border_thickness))*(border_alpha_start-border_alpha_end);
             if(border_alpha_start < border_alpha_end){
                 pixel.rgb = pixel.rgb * (1.0 - fade_color.a) + fade_color.rgb * fade_color.a;
-                pixel.a = border_alpha_end + ((float)closedEdgeXabs / (float)border_thickness)*(pixel.a-border_alpha_end);
+                pixel.a = border_alpha_end + (float(closedEdgeXabs) / float(border_thickness))*(pixel.a-border_alpha_end);
                 return pixel;
             }
             return fade_color;
@@ -134,10 +134,10 @@ float4 mainImage(VertData v_in) : TARGET
         if(border_thickness > 0){
             if(ceil(check_dist-d) <= border_thickness){
                 float4 fade_color = border_color;
-                fade_color.a = border_alpha_end + ((check_dist-d)/ (float)border_thickness)*(border_alpha_start-border_alpha_end);
+                fade_color.a = border_alpha_end + ((check_dist-d)/ float(border_thickness))*(border_alpha_start-border_alpha_end);
                 if(border_alpha_start < border_alpha_end){
                     fade_color.rgb = pixel.rgb * (1.0 - fade_color.a) + fade_color.rgb * fade_color.a;
-                    fade_color.a = border_alpha_end + ((check_dist-d) / (float)border_thickness)*(pixel.a-border_alpha_end);
+                    fade_color.a = border_alpha_end + ((check_dist-d) / float(border_thickness))*(pixel.a-border_alpha_end);
                 }
                 if(d > check_dist)
                     fade_color.a *= 1.0 -(d - check_dist);

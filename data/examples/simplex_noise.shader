@@ -2,6 +2,10 @@
 // for use with obs-shaderfilter 1.0
 //based upon: https://www.shadertoy.com/view/XsX3zB
 
+#ifndef OPENGL
+#define fract frac
+#endif
+
 uniform float Snap_Percent<
     string label = "Snap Percent";
     string widget_type = "slider";
@@ -38,6 +42,9 @@ uniform string Notes<
     string widget_type = "info";
 > = "Alpha Percentage applies to the shader, Use_Alpha_Layer applies effect with the image alpha layer, Resolution is the amount of detail of noise created.Fractal is a different algorithm. Snap Percent affects how many updates per second. Default values: 7.5%, 2.5%, 16.0, 100%";
 
+float dot(float3 a, float3 b){
+    return a.r*b.r+a.g*b.g+a.b*b.b;
+}
 float snap(float x, float snap)
 {
 	return snap * round(x / max(0.01,snap));
@@ -47,11 +54,11 @@ float3 random3(float3 co)
 {
 	float j = 4096.0 * sin(dot(co, float3(17.0, 59.4, 15.0)));
 	float3 result;
-	result.z = frac(512.0 * j);
+	result.z = fract(512.0 * j);
 	j *= .125;
-	result.x = frac(512.0 * j);
+	result.x = fract(512.0 * j);
 	j *= .125;
-	result.y = frac(512.0 * j);
+	result.y = fract(512.0 * j);
 	return result - 0.5;
 }
 
