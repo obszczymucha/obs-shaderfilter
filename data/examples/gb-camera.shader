@@ -93,7 +93,11 @@ float3 dither8x8(float2 coord, float3 color, float2 pixelSize) {
     int index = int(pixelCoord.x + (pixelCoord.y * 8.0));
     float bayer;
     if (alternative_bayer){
+#ifdef OPENGL
+        const int[64] bayer8 = int[64](
+#else
         const int bayer8[64] = {
+#endif
             0, 32,  8, 40,  2, 34, 10, 42, /* 8x8 Bayer ordered dithering */
             48, 16, 56, 24, 50, 18, 58, 26, /* pattern. Each input pixel */
             12, 44,  4, 36, 14, 46,  6, 38, /* is scaled to the 0..63 range */
@@ -101,10 +105,19 @@ float3 dither8x8(float2 coord, float3 color, float2 pixelSize) {
             3, 35, 11, 43,  1, 33,  9, 41, /* to determine the action. */
             51, 19, 59, 27, 49, 17, 57, 25,
             15, 47,  7, 39, 13, 45,  5, 37,
-            63, 31, 55, 23, 61, 29, 53, 21};
+            63, 31, 55, 23, 61, 29, 53, 21
+#ifdef OPENGL
+        );
+#else
+        };
+#endif
         bayer = (bayer8[index]-31.0)/32.0;
     } else {
+#ifdef OPENGL
+        const int[64] bayer8 = int[64](
+#else
         const int bayer8[64] = {
+#endif
             0, 48, 12, 60, 3, 51, 15, 63,
             32, 16, 44, 28, 35, 19, 47, 31,
             8, 56, 4, 52, 11, 59, 7, 55,
@@ -112,7 +125,12 @@ float3 dither8x8(float2 coord, float3 color, float2 pixelSize) {
             2, 50, 14, 62, 1, 49, 13, 61,
             34, 18, 46, 30, 33, 17, 45, 29,
             10, 58, 6, 54, 9, 57, 5, 53,
-            42, 26, 38, 22, 41, 25, 37, 21};
+            42, 26, 38, 22, 41, 25, 37, 21
+#ifdef OPENGL
+        );
+#else
+        };
+#endif
         bayer = (bayer8[index]-31.0)/32.0;
     }
     float3 bayerColor = (color + float3(bayer,bayer,bayer) * (dither_factor / 8.0));
@@ -129,9 +147,9 @@ float4 mainImage(VertData v_in) : TARGET
     float4 c = image.Sample(textureSampler, texcoord);
     float3 color = c.rgb;
    
-    color = levels(color, brightness, contrast, gamma);
+    color = levels(color, brightness, contrast, float3(gamma, gamma, gamma));
     
-    color = dither8x8(texcoord, color, pixelSize);
+    color = dither8x8(texcoord, color, float2(pixelSize,pixelSize));
     
     return float4(color.r, color.g, color.b, c.a);
 }

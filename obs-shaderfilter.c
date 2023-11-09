@@ -23,7 +23,7 @@
 
 #define nullptr ((void *)0)
 
-static const char *effect_template_begin = "\n\
+static const char *effect_template_begin = "\
 uniform float4x4 ViewProj;\n\
 uniform texture2d image;\n\
 \n\
@@ -75,7 +75,7 @@ technique Draw\n\
 		vertex_shader = mainTransform(v_in);\n\
 		pixel_shader = mainImage(v_in);\n\
 	}\n\
-}";
+}\n";
 
 struct effect_param_data {
 	struct dstr name;
@@ -340,6 +340,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	int device_type = gs_get_device_type();
 	if (device_type == GS_DEVICE_OPENGL) {
 		dstr_replace(&effect_text, "[loop]", "");
+		dstr_insert(&effect_text, 0, "#define OPENGL 1\n");
 	}
 	if (filter->effect)
 		gs_effect_destroy(filter->effect);
