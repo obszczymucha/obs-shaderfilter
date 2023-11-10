@@ -58,10 +58,10 @@ uniform float alpha_cut_off<
 
 float4 mainImage(VertData v_in) : TARGET
 {
-    float4 output = image.Sample(textureSampler, v_in.uv);
+    float4 output_color = image.Sample(textureSampler, v_in.uv);
     int closedEdgeX = 0;
     int closedEdgeY = 0;
-    if(output.a < alpha_cut_off){
+    if(output_color.a < alpha_cut_off){
         return float4(1.0,0.0,0.0,0.0);
     }
     if(image.Sample(textureSampler, v_in.uv + float2(corner_radius_right*uv_pixel_interval.x,0)).a < alpha_cut_off){
@@ -75,7 +75,7 @@ float4 mainImage(VertData v_in) : TARGET
         closedEdgeY = -corner_radius_top;
     }
     if(closedEdgeX == 0 && closedEdgeY == 0){
-        return output;
+        return output_color;
     }
     if(closedEdgeX != 0){
         [loop] for(int x = 1;x<corner_radius_right;x++){
@@ -117,7 +117,7 @@ float4 mainImage(VertData v_in) : TARGET
         closedEdgeYabs = 0;
     }
     if(closedEdgeXabs == 0 && closedEdgeYabs == 0){
-        return output;
+        return output_color;
     }
     if(closedEdgeXabs == 0){
         if(closedEdgeYabs <= border_thickness){
@@ -125,7 +125,7 @@ float4 mainImage(VertData v_in) : TARGET
             fade_color.a = border_alpha_end + (float(closedEdgeYabs) / float(border_thickness))*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
-            return output;
+            return output_color;
         }
     }
     if(closedEdgeYabs == 0){
@@ -134,7 +134,7 @@ float4 mainImage(VertData v_in) : TARGET
             fade_color.a = border_alpha_end + (float(closedEdgeXabs) / float(border_thickness))*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
-            return output;
+            return output_color;
         }
     }
 
@@ -146,7 +146,7 @@ float4 mainImage(VertData v_in) : TARGET
             fade_color.a = border_alpha_end + ((corner_radius-d)/ float(border_thickness))*(border_alpha_start-border_alpha_end);
             return fade_color;
         }else{
-            return output;
+            return output_color;
         }
     }
     return float4(0.0,0.0,0.0,0.0);

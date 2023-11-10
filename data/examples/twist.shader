@@ -28,7 +28,7 @@ uniform float rotation<
 > = 2.0;
 
 float2x2 rotate(float angle){
-    return float2x2(cos(angle), -sin(angle), sin(angle), cos(angle));
+    return float2x2(float2(cos(angle), -sin(angle)), float2(sin(angle), cos(angle)));
 }
 
 float4 mainImage(VertData v_in) : TARGET

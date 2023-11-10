@@ -88,8 +88,8 @@ float4 mainImage(VertData v_in) : TARGET
     float2 toCenter = center_pixel_coordinates - st;
 
     float min_alpha = clamp(minimum_alpha_percent * .01, -1.0, 101.0);
-    float4 output = image.Sample(textureSampler, v_in.uv);
-    if (output.a < min_alpha)
+    float4 output_color = image.Sample(textureSampler, v_in.uv);
+    if (output_color.a < min_alpha)
     {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
@@ -113,7 +113,7 @@ float4 mainImage(VertData v_in) : TARGET
     }
     if (closedEdgeX == 0 && closedEdgeY == 0)
     {
-        return output;
+        return output_color;
     }
     if (closedEdgeX != 0)
     {
@@ -157,7 +157,7 @@ float4 mainImage(VertData v_in) : TARGET
         }
         else
         {
-            return output;
+            return output_color;
         }
     }
     if (closedEdgeY == 0)
@@ -168,7 +168,7 @@ float4 mainImage(VertData v_in) : TARGET
         }
         else
         {
-            return output;
+            return output_color;
         }
     }
 
@@ -181,7 +181,7 @@ float4 mainImage(VertData v_in) : TARGET
         }
         else
         {
-            return output;
+            return output_color;
         }
     }
     return float4(0.0, 0.0, 0.0, 0.0);
