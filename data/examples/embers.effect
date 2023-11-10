@@ -20,6 +20,7 @@ uniform string notes<
 > = "luma is applied with Apply to Alpha Layer. Movement Speed and Direction can be negatives";
 
 #ifndef OPENGL
+#define mat2 float2x2
 #define fract frac
 #define mix lerp
 #endif
@@ -124,7 +125,8 @@ float hash1_2(float2 x)
 
 float2 hash2_2(float2 x)
 {
-    float2 y = mul(x, float2x2(20.52, 24.1994, 70.291, 80.171));
+    mat2 m = mat2(20.52, 24.1994, 70.291, 80.171);
+    float2 y = mul(x, m);
     return fract(sin(y) * 492.194);
 }
 
@@ -197,7 +199,8 @@ float2 rotate(float2 vpoint, float deg)
 {
     float s = sin(deg);
     float c = cos(deg);
-    return mul(vpoint, float2x2(s, c, -c, s));
+    mat2 m = mat2(s, c, -c, s);
+    return mul(vpoint, m);
 }
 
 //Cell center from point on the grid
@@ -206,7 +209,8 @@ float2 voronoiPointFromRoot(float2 root, float deg)
     float2 vpoint = hash2_2(root) - 0.5;
     float s = sin(deg);
     float c = cos(deg);
-    vpoint = mul(vpoint, float2x2(s, c, -c, s)) * 0.66;
+    mat2 m = mat2(s, c, -c, s);
+    vpoint = mul(vpoint, m) * 0.66;
     vpoint += root + 0.5;
     return vpoint;
 }
