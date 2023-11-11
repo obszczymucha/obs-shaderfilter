@@ -22,7 +22,7 @@ float2 fade(float2 t) {
 }
 
 float dot(float2 a,float2 b){
-	return a.x*b.x+a.y+b.y;
+	return a.x*b.x+a.y*b.y;
 }
 
 // Classic Perlin noise

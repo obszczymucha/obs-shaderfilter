@@ -12,7 +12,7 @@ uniform float2 uv_pixel_interval;
 '-------------------------*/
 
 
-texture2d initial_image;
+uniform texture2d initial_image;
 sampler_state initial_sampler 
 {
 	Filter    = Linear;
@@ -22,7 +22,7 @@ sampler_state initial_sampler
 	texture2d  = initial_image;
 };
 
-texture2d before_image;
+uniform texture2d before_image;
 sampler_state before_sampler {
 	Filter    = Linear;
 	AddressU  = Border;
@@ -31,7 +31,7 @@ sampler_state before_sampler {
 	texture2d  = before_image;
 };
 
-texture2d after_image;
+uniform texture2d after_image;
 sampler_state after_sampler {
 	Filter    = Linear;
 	AddressU  = Border;
@@ -98,8 +98,8 @@ float4 gaussian(VertData v_in, float angle)
 
 ColorData setColorData(VertData v_in): SV_TARGET0
 {
-	string RenderTarget0 = "initial_image";
-	ColorData cd = (ColorData)0;
+	//string RenderTarget0 = "initial_image";
+	ColorData cd;// = (ColorData)0;
 	cd.initial_color = image.Sample(textureSampler, v_in.uv);
 	cd.before_color = float4(0.0,0.0,1.0,1.0);
 	cd.after_color = float4(1.0,0.0,0.0,1.0);
@@ -108,7 +108,7 @@ ColorData setColorData(VertData v_in): SV_TARGET0
 
 float4 blurImageH(VertData v_in) : SV_TARGET1
 {
-	string RenderTarget1 = "before_image";	
+	//string RenderTarget1 = "before_image";	
 	//ColorData cd = (ColorData)0;
 	//cd.initial_color = image.Sample(textureSampler, v_in.uv);
 	//cd.before_color = float4(0.0,0.0,1.0,1.0);//gaussian(v_in, 0); 
@@ -117,7 +117,7 @@ float4 blurImageH(VertData v_in) : SV_TARGET1
 
 float4 blurImageV(VertData v_in) : SV_TARGET2
 {
-	string RenderTarget2 = "after_image";
+	//string RenderTarget2 = "after_image";
 	//ColorData cd = (ColorData)0;
 	//cd.after_color = 	float4(1.0,0.0,0.0,1.0); //gaussian(v_in, 90); 
 	return float4(1.0,0.0,0.0,1.0);
@@ -126,7 +126,7 @@ float4 blurImageV(VertData v_in) : SV_TARGET2
 float4 mainImage(VertData v_in) : SV_TARGET0
 {	
 	float4 color;
-	ColorData cd = (ColorData)0;
+	ColorData cd;// = (ColorData)0;
 	
 	//cd.initial_color = initial_image.Sample(initial_sampler, v_in.uv);
 	//cd.before_color = before_image.Sample(before_sampler, v_in.uv);
@@ -142,12 +142,12 @@ float4 mainImage(VertData v_in) : SV_TARGET0
 	float4 gray = grayscale(color);
 	float4 gray_text = grayscale(text_color);
 	float d = distance(gray.rgb, gray_text.rgb);
-	if (d <= dot(max_distance, uv_pixel_interval * max_distance)){
+	if (d <= dot(max_distance, uv_pixel_interval.x * max_distance)){
 		float d_c = pow(d*2, exp) / pow(2, exp);
 		d_c = sin(d_c * PI / 2);
 		d = pow(1.0 - sin(d * PI/4), exp);
 
-		color.rgb = d;
+		color.rgb = float3(d,d,d);
 	}
 
 	return color;
