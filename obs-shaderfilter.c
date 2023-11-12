@@ -83,6 +83,7 @@ struct effect_param_data {
 	struct dstr widget_type;
 	struct dstr description;
 	struct dstr group;
+	struct dstr path;
 	DARRAY(int) option_values;
 	DARRAY(struct dstr) option_labels;
 
@@ -267,6 +268,7 @@ static void shader_filter_clear_params(struct shader_filter_data *filter)
 		dstr_free(&param->widget_type);
 		dstr_free(&param->description);
 		dstr_free(&param->group);
+		dstr_free(&param->path);
 		da_free(param->option_values);
 		for (size_t i = 0; i < param->option_labels.num; i++) {
 			dstr_free(&param->option_labels.array[i]);
@@ -985,28 +987,35 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			const char *sn = obs_data_get_string(
 				settings, sources_name.array);
 			dstr_free(&sources_name);
-			source = (sn && strlen(sn)) ? obs_get_source_by_name(sn)
-						    : NULL;
+			source = obs_weak_source_get_source(param->source);
+			if (source &&
+			    strcmp(obs_source_get_name(source), sn) != 0) {
+				obs_source_release(source);
+				source = NULL;
+			}
+			if (!source)
+				source = (sn && strlen(sn))
+						 ? obs_get_source_by_name(sn)
+						 : NULL;
 			if (source) {
-				obs_weak_source_release(param->source);
-				param->source =
-					obs_source_get_weak_source(source);
+				if (!obs_weak_source_references_source(
+					    param->source, source)) {
+					obs_weak_source_release(param->source);
+					param->source =
+						obs_source_get_weak_source(
+							source);
+				}
 				obs_source_release(source);
 				if (param->image) {
 					gs_image_file_free(param->image);
 					param->image = NULL;
 				}
+				dstr_free(&param->path);
 			} else {
-				if (param->image == NULL) {
-					param->image = bzalloc(
-						sizeof(gs_image_file_t));
-				} else {
-					obs_enter_graphics();
-					gs_image_file_free(param->image);
-					obs_leave_graphics();
-				}
 				const char *path = default_value;
-				if (path && strlen(path)) {
+				if (!obs_data_has_user_value(settings,
+							     param_name) &&
+				    path && strlen(path)) {
 					if (os_file_exists(path)) {
 						char *abs_path =
 							os_get_abs_path_ptr(
@@ -1039,14 +1048,30 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 						dstr_free(&texture_path);
 					}
 				}
-				gs_image_file_init(
-					param->image,
-					obs_data_get_string(settings,
-							    param_name));
+				path = obs_data_get_string(settings,
+							   param_name);
+				bool n = false;
+				if (param->image == NULL) {
+					param->image = bzalloc(
+						sizeof(gs_image_file_t));
+					n = true;
+				}
+				if (n || !path || !param->path.array ||
+				    strcmp(path, param->path.array) != 0) {
 
-				obs_enter_graphics();
-				gs_image_file_init_texture(param->image);
-				obs_leave_graphics();
+					if (!n) {
+						obs_enter_graphics();
+						gs_image_file_free(
+							param->image);
+						obs_leave_graphics();
+					}
+					gs_image_file_init(param->image, path);
+					dstr_copy(&param->path, path);
+					obs_enter_graphics();
+					gs_image_file_init_texture(
+						param->image);
+					obs_leave_graphics();
+				}
 				obs_weak_source_release(param->source);
 				param->source = NULL;
 			}
