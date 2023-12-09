@@ -1147,11 +1147,31 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 		obs_source_skip_video_filter(filter->context);
 		return;
 	}
-	if (!obs_source_process_filter_begin(filter->context, GS_RGBA,
-					     OBS_NO_DIRECT_RENDERING)) {
+
+	const enum gs_color_space preferred_spaces[] = {
+		GS_CS_SRGB,
+		GS_CS_SRGB_16F,
+		GS_CS_709_EXTENDED,
+	};
+
+	const enum gs_color_space source_space = obs_source_get_color_space(
+		obs_filter_get_target(filter->context),
+		OBS_COUNTOF(preferred_spaces), preferred_spaces);
+
+	const enum gs_color_format format =
+		gs_get_format_from_space(source_space);
+
+	if (!obs_source_process_filter_begin_with_color_space(
+		    filter->context, format, source_space,
+		    //OBS_ALLOW_DIRECT_RENDERING)) {
+		OBS_NO_DIRECT_RENDERING)) {
 		return;
 	}
 	filter->rendering = true;
+
+	gs_blend_state_push();
+	gs_blend_function(GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
+
 	if (filter->param_uv_scale != NULL) {
 		gs_effect_set_vec2(filter->param_uv_scale, &filter->uv_scale);
 	}
@@ -1301,6 +1321,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	obs_source_process_filter_end(filter->context, filter->effect,
 				      filter->total_width,
 				      filter->total_height);
+	gs_blend_state_pop();
 	filter->rendering = false;
 }
 static uint32_t shader_filter_getwidth(void *data)
