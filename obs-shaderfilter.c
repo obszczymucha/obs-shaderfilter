@@ -1170,7 +1170,8 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	filter->rendering = true;
 
 	gs_blend_state_push();
-	gs_blend_function(GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
+	gs_blend_function_separate(GS_BLEND_SRCALPHA, GS_BLEND_INVSRCALPHA,
+				   GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
 
 	if (filter->param_uv_scale != NULL) {
 		gs_effect_set_vec2(filter->param_uv_scale, &filter->uv_scale);
