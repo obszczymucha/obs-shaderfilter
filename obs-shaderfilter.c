@@ -120,7 +120,6 @@ struct shader_filter_data {
 	gs_effect_t *output_effect;
 
 	gs_texrender_t *input_texrender;
-	bool input_texture_generated;
 	gs_texrender_t *output_texrender;
 	gs_eparam_t *param_output_image;
 
@@ -129,6 +128,7 @@ struct shader_filter_data {
 	bool last_from_file;
 
 	bool use_pm_alpha;
+	bool rendered;
 
 	//uint64_t shader_last_time;
 	float shader_start_time;
@@ -1201,6 +1201,8 @@ static void shader_filter_tick(void *data, float seconds)
 	// undecided between this and "rand_float(1);"
 	filter->rand_f =
 		(float)((double)rand_interval(0, 10000) / (double)10000);
+
+	filter->rendered = false;
 }
 
 gs_texrender_t *create_or_reset_texrender(gs_texrender_t *render)
@@ -1217,7 +1219,6 @@ static void get_input_source(struct shader_filter_data *filter)
 {
 	// Use the OBS default effect file as our effect.
 	gs_effect_t *pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
-	filter->input_texture_generated = false;
 
 	// Set up our color space info.
 	const enum gs_color_space preferred_spaces[] = {
@@ -1264,7 +1265,6 @@ static void get_input_source(struct shader_filter_data *filter)
 			filter->total_height, technique);
 		gs_texrender_end(filter->input_texrender);
 		gs_blend_state_pop();
-		filter->input_texture_generated = true;
 	}
 }
 
@@ -1494,6 +1494,11 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 
 	struct shader_filter_data *filter = data;
 
+	if (filter->rendered) {
+		draw_output(filter);
+		return;
+	}
+
 	if (filter->effect == NULL || filter->rendering) {
 		obs_source_skip_video_filter(filter->context);
 		return;
@@ -1502,11 +1507,9 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	get_input_source(filter);
 
 	filter->rendering = true;
-	//gs_texrender_t *tmp = filter->output_texrender;
-	//filter->output_texrender = filter->input_texrender;
-	//filter->input_texrender = tmp;
 	render_shader(filter);
 	draw_output(filter);
+	filter->rendered = true;
 	filter->rendering = false;
 }
 static uint32_t shader_filter_getwidth(void *data)
