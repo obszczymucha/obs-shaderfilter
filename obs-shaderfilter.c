@@ -417,7 +417,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 		dstr_insert(&effect_text, 0, "#define OPENGL 1\n");
 	}
 
-	if (dstr_find(&effect_text, "#define USE_PM_ALPHA 1")) {
+	if (effect_text.len && dstr_find(&effect_text, "#define USE_PM_ALPHA 1")) {
 		filter->use_pm_alpha = true;
 	} else {
 		filter->use_pm_alpha = false;
@@ -449,7 +449,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	}
 
 	// Store references to the new effect's parameters.
-	da_init(filter->stored_param_list);
+	da_free(filter->stored_param_list);
 
 	size_t effect_count = gs_effect_get_num_params(filter->effect);
 	for (size_t effect_index = 0; effect_index < effect_count;
