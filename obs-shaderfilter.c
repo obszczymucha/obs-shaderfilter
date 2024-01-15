@@ -78,6 +78,23 @@ float4 mainImage(VertData v_in) : TARGET\n\
 }\n\
 ";
 
+static const char *effect_template_default_transition_image_shader = "\n\
+uniform texture2d image_a;\n\
+uniform texture2d image_b;\n\
+uniform float transition_time = 0.5;\n\
+uniform bool convert_linear = true;\n\
+\n\
+float4 mainImage(VertData v_in) : TARGET\n\
+{\n\
+	float4 a_val = image_a.Sample(textureSampler, v_in.uv);\n\
+	float4 b_val = image_b.Sample(textureSampler, v_in.uv);\n\
+	float4 rgba = lerp(a_val, b_val, transition_time);\n\
+	if (convert_linear)\n\
+		rgba.rgb = srgb_nonlinear_to_linear(rgba.rgb);\n\
+	return rgba;\n\
+}\n\
+";
+
 static const char *effect_template_end = "\n\
 technique Draw\n\
 {\n\
@@ -1727,6 +1744,12 @@ static void shader_transition_video_render(void *data, gs_effect_t *effect)
 	gs_set_linear_srgb(previous);
 }
 
+static void shader_transition_defaults(obs_data_t *settings)
+{
+	obs_data_set_default_string(settings, "shader_text",
+		effect_template_default_transition_image_shader);
+}
+
 static enum gs_color_space
 shader_transition_get_color_space(void *data, size_t count,
 				  const enum gs_color_space *preferred_spaces)
@@ -1755,7 +1778,7 @@ struct obs_source_info shader_transition = {
 	.video_tick = shader_filter_tick,
 	.get_name = shader_transition_get_name,
 	.audio_render = shader_transition_audio_render,
-	.get_defaults = shader_filter_defaults,
+	.get_defaults = shader_transition_defaults,
 	.video_render = shader_transition_video_render,
 	.get_properties = shader_filter_properties,
 	.video_get_color_space = shader_transition_get_color_space,
