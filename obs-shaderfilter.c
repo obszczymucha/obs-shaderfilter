@@ -1345,7 +1345,7 @@ static void draw_output(struct shader_filter_data *filter)
 
 	if (!obs_source_process_filter_begin_with_color_space(
 		    filter->context, format, source_space,
-		    OBS_ALLOW_DIRECT_RENDERING)) {
+		    OBS_NO_DIRECT_RENDERING)) {
 		return;
 	}
 
@@ -1357,14 +1357,10 @@ static void draw_output(struct shader_filter_data *filter)
 		gs_effect_set_texture(filter->param_output_image, texture);
 	}
 
-	gs_blend_state_push();
-	gs_blend_function_separate(GS_BLEND_SRCALPHA, GS_BLEND_INVSRCALPHA,
-				   GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
-
 	obs_source_process_filter_end(filter->context, pass_through,
 				      filter->total_width,
 				      filter->total_height);
-	gs_blend_state_pop();
+
 }
 
 void shader_filter_set_effect_params(struct shader_filter_data *filter)
