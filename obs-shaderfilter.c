@@ -155,6 +155,8 @@ struct shader_filter_data {
 	struct dstr last_path;
 	bool last_from_file;
 	bool transition;
+	bool transitioning;
+	bool prev_transitioning;
 
 	bool use_pm_alpha;
 	bool rendered;
@@ -310,6 +312,19 @@ static void shader_filter_clear_params(struct shader_filter_data *filter)
 			param->image = NULL;
 		}
 		if (param->source) {
+			obs_source_t *source =
+				obs_weak_source_get_source(param->source);
+			if (source) {
+				if ((!filter->transition ||
+				     filter->prev_transitioning) &&
+				    obs_source_active(filter->context))
+					obs_source_dec_active(source);
+				if ((!filter->transition ||
+				     filter->prev_transitioning) &&
+				    obs_source_showing(filter->context))
+					obs_source_dec_showing(source);
+				obs_source_release(source);
+			}
 			obs_weak_source_release(param->source);
 			param->source = NULL;
 		}
@@ -1118,6 +1133,33 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			if (source) {
 				if (!obs_weak_source_references_source(
 					    param->source, source)) {
+					if ((!filter->transition ||
+					     filter->prev_transitioning) &&
+					    obs_source_active(filter->context))
+						obs_source_inc_active(source);
+					if ((!filter->transition ||
+					     filter->prev_transitioning) &&
+					    obs_source_showing(filter->context))
+						obs_source_inc_showing(source);
+
+					obs_source_t *old_source =
+						obs_weak_source_get_source(
+							param->source);
+					if (old_source) {
+						if ((!filter->transition ||
+						     filter->prev_transitioning) &&
+						    obs_source_active(
+							    filter->context))
+							obs_source_dec_active(
+								old_source);
+						if ((!filter->transition ||
+						     filter->prev_transitioning) &&
+						    obs_source_showing(
+							    filter->context))
+							obs_source_dec_showing(
+								old_source);
+						obs_source_release(old_source);
+					}
 					obs_weak_source_release(param->source);
 					param->source =
 						obs_source_get_weak_source(
@@ -1189,6 +1231,22 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 					gs_image_file_init_texture(
 						param->image);
 					obs_leave_graphics();
+				}
+				obs_source_t *old_source =
+					obs_weak_source_get_source(
+						param->source);
+				if (old_source) {
+					if ((!filter->transition ||
+					     filter->prev_transitioning) &&
+					    obs_source_active(filter->context))
+						obs_source_dec_active(
+							old_source);
+					if ((!filter->transition ||
+					     filter->prev_transitioning) &&
+					    obs_source_showing(filter->context))
+						obs_source_dec_showing(
+							old_source);
+					obs_source_release(old_source);
 				}
 				obs_weak_source_release(param->source);
 				param->source = NULL;
@@ -1360,7 +1418,6 @@ static void draw_output(struct shader_filter_data *filter)
 	obs_source_process_filter_end(filter->context, pass_through,
 				      filter->total_width,
 				      filter->total_height);
-
 }
 
 void shader_filter_set_effect_params(struct shader_filter_data *filter)
@@ -1608,6 +1665,45 @@ shader_filter_get_color_space(void *data, size_t count,
 					  potential_spaces);
 }
 
+void shader_filter_param_source_action(void *data,
+				       void (*action)(obs_source_t *source))
+{
+	struct shader_filter_data *filter = data;
+	size_t param_count = filter->stored_param_list.num;
+	for (size_t param_index = 0; param_index < param_count; param_index++) {
+		struct effect_param_data *param =
+			(filter->stored_param_list.array + param_index);
+		if (!param->source)
+			continue;
+		obs_source_t *source =
+			obs_weak_source_get_source(param->source);
+		if (!source)
+			continue;
+		action(source);
+		obs_source_release(source);
+	}
+}
+
+void shader_filter_activate(void *data)
+{
+	shader_filter_param_source_action(data, obs_source_inc_active);
+}
+
+void shader_filter_deactivate(void *data)
+{
+	shader_filter_param_source_action(data, obs_source_dec_active);
+}
+
+void shader_filter_show(void *data)
+{
+	shader_filter_param_source_action(data, obs_source_inc_showing);
+}
+
+void shader_filter_hide(void *data)
+{
+	shader_filter_param_source_action(data, obs_source_dec_showing);
+}
+
 struct obs_source_info shader_filter = {
 	.id = "shader_filter",
 	.type = OBS_SOURCE_TYPE_FILTER,
@@ -1625,6 +1721,10 @@ struct obs_source_info shader_filter = {
 	.video_render = shader_filter_render,
 	.get_properties = shader_filter_properties,
 	.video_get_color_space = shader_filter_get_color_space,
+	.activate = shader_filter_activate,
+	.deactivate = shader_filter_deactivate,
+	.show = shader_filter_show,
+	.hide = shader_filter_hide,
 };
 
 static void *shader_transition_create(obs_data_t *settings,
@@ -1692,6 +1792,16 @@ static void shader_transition_video_callback(void *data, gs_texture_t *a,
 	if (filter->effect == NULL || filter->rendering)
 		return;
 
+	if (!filter->prev_transitioning) {
+		if (obs_source_active(filter->context))
+			shader_filter_param_source_action(
+				data, obs_source_inc_active);
+		if (obs_source_showing(filter->context))
+			shader_filter_param_source_action(
+				data, obs_source_inc_showing);
+	}
+	filter->transitioning = true;
+
 	const bool previous = gs_framebuffer_srgb_enabled();
 	gs_enable_framebuffer_srgb(true);
 
@@ -1734,15 +1844,25 @@ static void shader_transition_video_render(void *data, gs_effect_t *effect)
 	const bool previous = gs_set_linear_srgb(true);
 
 	struct shader_filter_data *filter = data;
+	filter->transitioning = false;
 	obs_transition_video_render2(filter->context,
 				     shader_transition_video_callback, NULL);
-
+	if (!filter->transitioning && filter->prev_transitioning) {
+		if (obs_source_active(filter->context))
+			shader_filter_param_source_action(
+				data, obs_source_dec_active);
+		if (obs_source_showing(filter->context))
+			shader_filter_param_source_action(
+				data, obs_source_dec_showing);
+	}
+	filter->prev_transitioning = filter->transitioning;
 	gs_set_linear_srgb(previous);
 }
 
 static void shader_transition_defaults(obs_data_t *settings)
 {
-	obs_data_set_default_string(settings, "shader_text",
+	obs_data_set_default_string(
+		settings, "shader_text",
 		effect_template_default_transition_image_shader);
 }
 
