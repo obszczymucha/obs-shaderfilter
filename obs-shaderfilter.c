@@ -711,6 +711,30 @@ static bool shader_filter_from_file_changed(obs_properties_t *props,
 	return true;
 }
 
+static bool shader_filter_text_changed(obs_properties_t *props,
+				       obs_property_t *p, obs_data_t *settings)
+{
+	UNUSED_PARAMETER(p);
+	struct shader_filter_data *filter = obs_properties_get_param(props);
+	if (!filter)
+		return false;
+
+	const char *shader_text = obs_data_get_string(settings, "shader_text");
+	bool can_convert = strstr(shader_text, "void mainImage( out vec4") ||
+			   strstr(shader_text, "void mainImage(out vec4") ||
+			   strstr(shader_text, "void main()");
+	obs_property_t *shader_convert =
+		obs_properties_get(props, "shader_convert");
+	bool visible =
+		obs_property_visible(obs_properties_get(props, "shader_text"));
+	if (obs_property_visible(shader_convert) != (can_convert && visible)) {
+		obs_property_set_visible(shader_convert,
+					 can_convert && visible);
+		return true;
+	}
+	return false;
+}
+
 static bool shader_filter_file_name_changed(obs_properties_t *props,
 					    obs_property_t *p,
 					    obs_data_t *settings)
@@ -719,8 +743,9 @@ static bool shader_filter_file_name_changed(obs_properties_t *props,
 	const char *new_file_name =
 		obs_data_get_string(settings, obs_property_name(p));
 
-	if (dstr_is_empty(&filter->last_path) ||
-	    dstr_cmp(&filter->last_path, new_file_name) != 0) {
+	if ((dstr_is_empty(&filter->last_path) && strlen(new_file_name)) ||
+	    (filter->last_path.array &&
+	     dstr_cmp(&filter->last_path, new_file_name) != 0)) {
 		filter->reload_effect = true;
 		dstr_copy(&filter->last_path, new_file_name);
 		size_t l = strlen(new_file_name);
@@ -782,6 +807,305 @@ static bool add_source_to_list(void *data, obs_source_t *source)
 	return true;
 }
 
+static void convert_float_init(struct dstr *effect_text, char *name, int count)
+{
+	const size_t len = strlen(name);
+
+	char *pos = strstr(effect_text->array, name);
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *begin = strstr(pos + len, "(");
+		char *end = strstr(pos + len, ")");
+		char *comma = strstr(pos + len, ",");
+		if (end && (!begin || end < begin) && (!comma || end < comma)) {
+			bool only_numbers = true;
+			for (char *ch = pos + len; ch < end; ch++) {
+				if ((*ch < '0' || *ch > '9') && *ch != '.' &&
+				    *ch != ' ') {
+					only_numbers = false;
+					break;
+				}
+			}
+			if (only_numbers) {
+				//only 1 simple arg in the float4
+				struct dstr found = {0};
+				dstr_init(&found);
+				dstr_ncat(&found, pos, end - pos + 1);
+
+				struct dstr replacement = {0};
+				dstr_init_copy(&replacement, name);
+				dstr_ncat(&replacement, pos + len,
+					  end - (pos + len));
+				for (int i = 1; i < count; i++) {
+					dstr_cat(&replacement, ",");
+					dstr_ncat(&replacement, pos + len,
+						  end - (pos + len));
+				}
+				dstr_cat(&replacement, ")");
+
+				dstr_replace(effect_text, found.array,
+					     replacement.array);
+
+				dstr_free(&replacement);
+				dstr_free(&found);
+			}
+		}
+		pos = strstr(effect_text->array + diff + len, name);
+	}
+}
+
+static bool shader_filter_convert(obs_properties_t *props,
+				  obs_property_t *property, void *data)
+{
+	UNUSED_PARAMETER(props);
+	if (!data)
+		return false;
+	struct shader_filter_data *filter = data;
+	obs_data_t *settings = obs_source_get_settings(filter->context);
+	if (!settings)
+		return false;
+	struct dstr effect_text = {0};
+	dstr_init_copy(&effect_text,
+		       obs_data_get_string(settings, "shader_text"));
+
+	size_t start_diff = 24;
+	bool main_no_args = false;
+	char *main_pos = strstr(effect_text.array, "void mainImage(out vec4");
+	if (!main_pos) {
+		main_pos =
+			strstr(effect_text.array, "void mainImage( out vec4");
+		start_diff++;
+	}
+	if (!main_pos) {
+		main_pos = strstr(effect_text.array, "void main()");
+		if (main_pos)
+			main_no_args = true;
+	}
+	if (!main_pos) {
+		dstr_free(&effect_text);
+		obs_data_release(settings);
+		return false;
+	}
+	bool uv = false;
+	struct dstr return_color_name = {0};
+	struct dstr coord_name = {0};
+	if (main_no_args) {
+
+		dstr_replace(&effect_text, "void main()",
+			     "float4 mainImage(VertData v_in) : TARGET");
+
+		if (strstr(effect_text.array, "fNormal")) {
+			uv = true;
+			dstr_init_copy(&coord_name, "fNormal");
+		} else {
+			uv = false;
+			dstr_init_copy(&coord_name, "gl_FragCoord");
+		}
+
+		char *out_start = strstr(effect_text.array, "out vec4");
+		if (out_start) {
+			char *start = out_start + 9;
+			while (*start == ' ')
+				start++;
+			char *end = start;
+			while (*end != ' ' && *end != ',' && *end != '(' &&
+			       *end != ')' && *end != ';' && *end != 0)
+				end++;
+			dstr_ncat(&return_color_name, start, end - start);
+			while (*end == ' ')
+				end++;
+			if (*end == ';')
+				dstr_remove(&effect_text,
+					    out_start - effect_text.array,
+					    (end + 1) - out_start);
+		} else {
+			dstr_init_copy(&return_color_name, "gl_FragColor");
+		}
+	} else {
+
+		char *start = main_pos + start_diff;
+		while (*start == ' ')
+			start++;
+		char *end = start;
+		while (*end != ' ' && *end != ',' && *end != ')' && *end != 0)
+			end++;
+
+		dstr_ncat(&return_color_name, start, end - start);
+
+		start = strstr(end, ",");
+		if (!start) {
+			dstr_free(&effect_text);
+			dstr_free(&return_color_name);
+			obs_data_release(settings);
+			return false;
+		}
+		start++;
+		while (*start == ' ')
+			start++;
+		if (*start == 'i' && *(start + 1) == 'n' && *(start + 2) == ' ')
+			start += 3;
+		while (*start == ' ')
+			start++;
+		if (*start == 'v' && *(start + 1) == 'e' &&
+		    *(start + 2) == 'c' && *(start + 3) == '2' &&
+		    *(start + 4) == ' ')
+			start += 5;
+		while (*start == ' ')
+			start++;
+
+		end = start;
+		while (*end != ' ' && *end != ',' && *end != ')' && *end != 0)
+			end++;
+
+		dstr_ncat(&coord_name, start, end - start);
+
+		while (*end != ')' && *end != 0)
+			end++;
+		size_t idx = main_pos - effect_text.array;
+		dstr_remove(&effect_text, idx, end - main_pos + 1);
+		dstr_insert(&effect_text, idx,
+			    "float4 mainImage(VertData v_in) : TARGET");
+	}
+
+	if (dstr_cmp(&coord_name, "fragCoord") != 0) {
+		dstr_replace(&effect_text, coord_name.array, "fragCoord");
+	}
+	dstr_free(&coord_name);
+
+	dstr_replace(&effect_text, "varying vec3", "//varying vec3");
+	dstr_replace(&effect_text, "precision highp float;",
+		     "//precision highp float;");
+	if (uv) {
+		dstr_replace(&effect_text, "fragCoord.xy", "v_in.uv");
+		dstr_replace(&effect_text, "fragCoord", "float3(v_in.uv,0.0)");
+	} else {
+
+		dstr_replace(&effect_text, "fragCoord.xy / iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "fragCoord / iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "fragCoord", "(v_in.uv * uv_size)");
+	}
+	dstr_replace(&effect_text, "u_resolution", "uv_size");
+	dstr_replace(&effect_text, "uResolution", "uv_size");
+	dstr_replace(&effect_text, "iResolution.xy", "uv_size");
+	dstr_replace(&effect_text, "iResolution.x", "uv_size.x");
+	dstr_replace(&effect_text, "iResolution.y", "uv_size.y");
+	dstr_replace(&effect_text, "iResolution",
+		     "float4(uv_size,uv_pixel_interval)");
+
+	dstr_replace(&effect_text, "uniform vec2 uv_size;", "");
+
+	if (strstr(effect_text.array, "iTime"))
+		dstr_replace(&effect_text, "iTime", "elapsed_time");
+	else if (strstr(effect_text.array, "uTime"))
+		dstr_replace(&effect_text, "uTime", "elapsed_time");
+	else if (strstr(effect_text.array, "u_time"))
+		dstr_replace(&effect_text, "u_time", "elapsed_time");
+	else
+		dstr_replace(&effect_text, "time", "elapsed_time");
+
+	dstr_replace(&effect_text, "uniform float elapsed_time;", "");
+
+	dstr_replace(&effect_text, "vec4", "float4");
+	dstr_replace(&effect_text, "vec3", "float3");
+
+	dstr_replace(&effect_text, "vec2", "float2");
+
+	convert_float_init(&effect_text, "float2(", 2);
+	convert_float_init(&effect_text, "float3(", 3);
+	convert_float_init(&effect_text, "float4(", 4);
+
+	dstr_cat(&return_color_name, "=");
+	dstr_replace(&effect_text, return_color_name.array, "return ");
+	dstr_replace(&return_color_name, "=", " =");
+	dstr_replace(&effect_text, return_color_name.array, "return ");
+
+	dstr_free(&return_color_name);
+
+	dstr_replace(&effect_text, "#version ", "//#version ");
+
+	struct dstr insert_text = {0};
+	dstr_init_copy(&insert_text, "#ifndef OPENGL\n");
+
+	if (dstr_find(&effect_text, "mat2"))
+		dstr_cat(&insert_text, "#define mat2 float2x2\n");
+	if (dstr_find(&effect_text, "mat3"))
+		dstr_cat(&insert_text, "#define mat3 float3x3\n");
+	if (dstr_find(&effect_text, "mat3"))
+		dstr_cat(&insert_text, "#define mat4 float4x4\n");
+	if (dstr_find(&effect_text, "fract("))
+		dstr_cat(&insert_text, "#define fract frac\n");
+	if (dstr_find(&effect_text, "mix("))
+		dstr_cat(&insert_text, "#define mix lerp\n");
+	if (dstr_find(&effect_text, "mod("))
+		dstr_cat(&insert_text, "float mod(float x, float y)\n\
+{\n\
+		return x - y * floor(x / y);\n\
+}\n");
+	dstr_cat(&insert_text, "#endif\n");
+
+	int num_textures = 0;
+	struct dstr texture_name = {0};
+	struct dstr replacing = {0};
+	struct dstr replacement = {0};
+
+	char *texture = strstr(effect_text.array, "texture(");
+	while (texture) {
+		const size_t diff = texture - effect_text.array;
+		char *start = texture + 8;
+		while (*start == ' ')
+			start++;
+		char *end = start;
+		while (*end != ' ' && *end != ',' && *end != ')' &&
+		       *end != '\n' && *end != 0)
+			end++;
+		texture_name.len = 0;
+		dstr_ncat(&texture_name, start, end - start);
+
+		replacing.len = 0;
+		dstr_ncat(&replacing, texture, end - texture);
+
+		replacement.len = 0;
+
+		if (num_textures) {
+			dstr_cat_dstr(&replacement, &texture_name);
+			dstr_cat(&replacement, ".Sample(textureSampler");
+
+			dstr_insert(&effect_text, diff, texture_name.array);
+			dstr_cat(&insert_text, "uniform texture2d ");
+			dstr_cat(&insert_text, texture_name.array);
+			dstr_cat(&insert_text, ";\n");
+		} else {
+			dstr_cat(&replacement, "image.Sample(textureSampler");
+		}
+		dstr_replace(&effect_text, replacing.array, replacement.array);
+		num_textures++;
+
+		texture = strstr(effect_text.array + diff + 8, "texture(");
+	}
+	dstr_free(&replacing);
+	dstr_free(&replacement);
+	dstr_free(&texture_name);
+
+	if (insert_text.len > 24) {
+		dstr_insert_dstr(&effect_text, 0, &insert_text);
+	}
+	dstr_free(&insert_text);
+
+	obs_data_set_string(settings, "shader_text", effect_text.array);
+
+	dstr_free(&effect_text);
+
+	obs_data_release(settings);
+	obs_property_set_visible(property, false);
+
+	filter->reload_effect = true;
+
+	obs_source_update(filter->context, NULL);
+	return true;
+}
+
 static const char *shader_filter_texture_file_filter =
 	"Textures (*.bmp *.tga *.png *.jpeg *.jpg *.gif);;";
 
@@ -825,9 +1149,15 @@ static obs_properties_t *shader_filter_properties(void *data)
 	obs_property_set_modified_callback(from_file,
 					   shader_filter_from_file_changed);
 
-	obs_properties_add_text(props, "shader_text",
-				obs_module_text("ShaderFilter.ShaderText"),
-				OBS_TEXT_MULTILINE);
+	obs_property_t *shader_text = obs_properties_add_text(
+		props, "shader_text",
+		obs_module_text("ShaderFilter.ShaderText"), OBS_TEXT_MULTILINE);
+	obs_property_set_modified_callback(shader_text,
+					   shader_filter_text_changed);
+
+	obs_properties_add_button2(props, "shader_convert",
+				   obs_module_text("ShaderFilter.Convert"),
+				   shader_filter_convert, data);
 
 	obs_property_t *file_name = obs_properties_add_path(
 		props, "shader_file_name",
