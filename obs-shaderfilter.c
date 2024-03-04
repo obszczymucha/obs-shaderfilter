@@ -816,9 +816,30 @@ static void convert_atan_single(struct dstr *effect_text)
 		if (!comma)
 			break;
 
+		int depth = 0;
 		char *open = strstr(pos + 5, "(");
 		char *close = strstr(pos + 5, ")");
-		if (close && comma < close && (!open || comma < open))
+		if (!close)
+			return;
+		do {
+			while (open && open < close) {
+				depth++;
+				open = strstr(open + 1, "(");
+			}
+			while (depth > 0 && close && (!open || close < open)) {
+				depth--;
+				if (depth == 0 && (!comma || comma < close)) {
+					comma = strstr(close + 1, ",");
+				} else if (comma && open && comma > open &&
+					   comma < close) {
+					comma = NULL;
+				}
+				open = strstr(close + 1, "(");
+				close = strstr(close + 1, ")");
+			}
+		} while (depth > 0 && close);
+
+		if (close && comma && comma < close && (!open || comma < open))
 			*comma = '/';
 
 		pos = strstr(effect_text->array + diff + 5, "atan(");
@@ -839,7 +860,8 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 			bool only_numbers = true;
 			for (char *ch = pos + len; ch < end; ch++) {
 				if ((*ch < '0' || *ch > '9') && *ch != '.' &&
-				    *ch != ' ') {
+				    *ch != ' ' && *ch != '+' && *ch != '-' &&
+				    *ch != '*' && *ch != '/') {
 					only_numbers = false;
 					break;
 				}
@@ -888,7 +910,7 @@ static void convert_if0(struct dstr *effect_text)
 		size_t diff = begin - effect_text->array;
 		char *end = strstr(begin, "#endif");
 		if (!end)
-			break;
+			return;
 		char *el = strstr(begin, "#else");
 		char *eli = strstr(begin, "#elif");
 		if (eli && eli < end && (!el || eli < el)) {
@@ -910,6 +932,92 @@ static void convert_if0(struct dstr *effect_text)
 	}
 }
 
+static void convert_if1(struct dstr *effect_text)
+{
+	char *begin = strstr(effect_text->array, "#if 1");
+	while (begin) {
+		size_t diff = begin - effect_text->array;
+		char *end = strstr(begin, "#endif");
+		if (!end)
+			return;
+		char *el = strstr(begin, "#el");
+		if (el && el < end) {
+			dstr_remove(effect_text, el - effect_text->array,
+				    end - el + 6); // #endif
+			end = strstr(effect_text->array + diff, "\n");
+			if (end)
+				dstr_remove(effect_text, diff,
+					    end - (effect_text->array + diff));
+			begin = strstr(effect_text->array + diff, "#if 1");
+		} else if (!el || el > end) {
+			dstr_remove(effect_text, end - effect_text->array, 6);
+			end = strstr(effect_text->array + diff, "\n");
+			if (end)
+				dstr_remove(effect_text, diff,
+					    end - (effect_text->array + diff));
+			begin = strstr(effect_text->array + diff, "#if 1");
+		} else {
+			begin = strstr(effect_text->array + diff + 5, "#if 1");
+		}
+	}
+}
+
+static void convert_define(struct dstr *effect_text)
+{
+	char *pos = strstr(effect_text->array, "#define ");
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *start = pos + 8;
+		while (*start == ' ')
+			start++;
+		char *end = start;
+		while (*end != ' ' && *end != 0)
+			end++;
+		char *t = strstr(start, "(");
+		if (t && t < end) {
+			// don't replace macro
+			pos = strstr(effect_text->array + diff + 8, "#define ");
+			continue;
+		}
+
+		struct dstr def_name = {0};
+		dstr_ncat(&def_name, start, end - start);
+
+		start = end;
+		while (*start == ' ')
+			start++;
+
+		end = start;
+		while (*end != '\n' && *end != 0 &&
+		       (*end != '/' || *(end + 1) != '/'))
+			end++;
+
+		t = strstr(start, "(");
+		if (*start == '(' || (t && t < end)) {
+			struct dstr replacement = {0};
+			dstr_ncat(&replacement, start, end - start);
+
+			dstr_remove(effect_text, diff,
+				    end - (effect_text->array + diff));
+
+			dstr_replace(effect_text, def_name.array,
+				     replacement.array);
+
+			dstr_free(&replacement);
+			pos = strstr(effect_text->array + diff, "#define ");
+		} else {
+			pos = strstr(effect_text->array + diff + 8, "#define ");
+		}
+		dstr_free(&def_name);
+	}
+}
+
+static bool is_var_char(char ch)
+{
+	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
+	       (ch >= 'A' && ch <= 'Z') || ch == '_';
+}
+
 static bool shader_filter_convert(obs_properties_t *props,
 				  obs_property_t *property, void *data)
 {
@@ -923,6 +1031,8 @@ static bool shader_filter_convert(obs_properties_t *props,
 	struct dstr effect_text = {0};
 	dstr_init_copy(&effect_text,
 		       obs_data_get_string(settings, "shader_text"));
+
+	convert_define(&effect_text);
 
 	size_t start_diff = 24;
 	bool main_no_args = false;
@@ -1037,8 +1147,10 @@ static bool shader_filter_convert(obs_properties_t *props,
 			char *pos = strstr(effect_text.array, coord_name.array);
 			while (pos) {
 				size_t diff = pos - effect_text.array;
-				if ((main_no_args || diff < main_diff) ||
-				    diff > main_diff + 24) {
+				if (((main_no_args || diff < main_diff) ||
+				     diff > main_diff + 24) &&
+				    !is_var_char(*(pos - 1)) &&
+				    !is_var_char(*(pos + coord_name.len))) {
 					dstr_remove(&effect_text, diff,
 						    coord_name.len);
 					dstr_insert(&effect_text, diff,
@@ -1058,6 +1170,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 	dstr_free(&coord_name);
 
 	convert_if0(&effect_text);
+	convert_if1(&effect_text);
 
 	dstr_replace(&effect_text, "varying vec3", "//varying vec3");
 	dstr_replace(&effect_text, "precision highp float;",
@@ -1075,6 +1188,16 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_replace(&effect_text, "fragCoord / iResolution.xy",
 			     "v_in.uv");
 		dstr_replace(&effect_text, "fragCoord", "(v_in.uv * uv_size)");
+		dstr_replace(&effect_text, "gl_FragCoord.xy/iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "gl_FragCoord.xy / iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "gl_FragCoord/iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "gl_FragCoord / iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "gl_FragCoord",
+			     "(v_in.uv * uv_size)");
 	}
 	dstr_replace(&effect_text, "u_resolution", "uv_size");
 	dstr_replace(&effect_text, "uResolution", "uv_size");
@@ -1108,6 +1231,9 @@ static bool shader_filter_convert(obs_properties_t *props,
 
 	convert_atan_single(&effect_text);
 
+	dstr_replace(&effect_text, "point(", "point2(");
+	dstr_replace(&effect_text, "line(", "line2(");
+
 	dstr_cat(&return_color_name, "=");
 	dstr_replace(&effect_text, return_color_name.array, "return ");
 	dstr_replace(&return_color_name, "=", " =");
@@ -1136,6 +1262,18 @@ static bool shader_filter_convert(obs_properties_t *props,
 		return x - y * floor(x / y);\n\
 }\n");
 	dstr_cat(&insert_text, "#endif\n");
+
+	if (dstr_find(&effect_text, "iMouse") &&
+	    !dstr_find(&effect_text, "float2 iMouse"))
+		dstr_cat(&insert_text, "uniform float4 iMouse;\n");
+
+	if (dstr_find(&effect_text, "iSampleRate") &&
+	    !dstr_find(&effect_text, "float iSampleRate"))
+		dstr_cat(&insert_text, "uniform float iSampleRate;\n");
+
+	if (dstr_find(&effect_text, "iTimeDelta") &&
+	    !dstr_find(&effect_text, "float iTimeDelta"))
+		dstr_cat(&insert_text, "uniform float iTimeDelta;\n");
 
 	int num_textures = 0;
 	struct dstr texture_name = {0};
