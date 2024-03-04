@@ -807,6 +807,24 @@ static bool add_source_to_list(void *data, obs_source_t *source)
 	return true;
 }
 
+static void convert_atan_single(struct dstr *effect_text)
+{
+	char *pos = strstr(effect_text->array, "atan(");
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *comma = strstr(pos + 5, ",");
+		if (!comma)
+			break;
+
+		char *open = strstr(pos + 5, "(");
+		char *close = strstr(pos + 5, ")");
+		if (close && comma < close && (!open || comma < open))
+			*comma = '/';
+
+		pos = strstr(effect_text->array + diff + 5, "atan(");
+	}
+}
+
 static void convert_float_init(struct dstr *effect_text, char *name, int count)
 {
 	const size_t len = strlen(name);
@@ -826,7 +844,16 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 					break;
 				}
 			}
-			if (only_numbers) {
+			bool only_float = false;
+			if (!only_numbers) {
+				struct dstr find = {0};
+				dstr_init_copy(&find, "float ");
+				dstr_ncat(&find, pos + len, end - (pos + len));
+				if (strstr(effect_text->array, find.array))
+					only_float = true;
+				dstr_free(&find);
+			}
+			if (only_numbers || only_float) {
 				//only 1 simple arg in the float4
 				struct dstr found = {0};
 				dstr_init(&found);
@@ -851,6 +878,35 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 			}
 		}
 		pos = strstr(effect_text->array + diff + len, name);
+	}
+}
+
+static void convert_if0(struct dstr *effect_text)
+{
+	char *begin = strstr(effect_text->array, "#if 0");
+	while (begin) {
+		size_t diff = begin - effect_text->array;
+		char *end = strstr(begin, "#endif");
+		if (!end)
+			break;
+		char *el = strstr(begin, "#else");
+		char *eli = strstr(begin, "#elif");
+		if (eli && eli < end && (!el || eli < el)) {
+			//replace #elif with #if
+			dstr_remove(effect_text, diff, el - begin + 5);
+			dstr_insert(effect_text, diff, "#if");
+			begin = strstr(effect_text->array + diff + 3, "#if 0");
+		} else if (el && el < end) {
+			dstr_remove(effect_text, end - effect_text->array,
+				    6); // #endif
+			dstr_remove(effect_text, diff, el - begin + 5);
+			begin = strstr(effect_text->array + diff, "#if 0");
+		} else if (!el || el > end) {
+			dstr_remove(effect_text, diff, end - begin + 6);
+			begin = strstr(effect_text->array + diff, "#if 0");
+		} else {
+			begin = strstr(effect_text->array + diff + 5, "#if 0");
+		}
 	}
 }
 
@@ -886,6 +942,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 		obs_data_release(settings);
 		return false;
 	}
+	size_t main_diff = main_pos - effect_text.array;
 	bool uv = false;
 	struct dstr return_color_name = {0};
 	struct dstr coord_name = {0};
@@ -893,8 +950,13 @@ static bool shader_filter_convert(obs_properties_t *props,
 
 		dstr_replace(&effect_text, "void main()",
 			     "float4 mainImage(VertData v_in) : TARGET");
-
-		if (strstr(effect_text.array, "fNormal")) {
+		if (strstr(effect_text.array, "varying vec2 position;")) {
+			uv = true;
+			dstr_init_copy(&coord_name, "position");
+		} else if (strstr(effect_text.array, "varying vec2 pos;")) {
+			uv = true;
+			dstr_init_copy(&coord_name, "pos");
+		} else if (strstr(effect_text.array, "fNormal")) {
 			uv = true;
 			dstr_init_copy(&coord_name, "fNormal");
 		} else {
@@ -968,9 +1030,34 @@ static bool shader_filter_convert(obs_properties_t *props,
 	}
 
 	if (dstr_cmp(&coord_name, "fragCoord") != 0) {
-		dstr_replace(&effect_text, coord_name.array, "fragCoord");
+		if (dstr_find(&coord_name, "fragCoord")) {
+			dstr_replace(&effect_text, coord_name.array,
+				     "fragCoord");
+		} else {
+			char *pos = strstr(effect_text.array, coord_name.array);
+			while (pos) {
+				size_t diff = pos - effect_text.array;
+				if ((main_no_args || diff < main_diff) ||
+				    diff > main_diff + 24) {
+					dstr_remove(&effect_text, diff,
+						    coord_name.len);
+					dstr_insert(&effect_text, diff,
+						    "fragCoord");
+					pos = strstr(effect_text.array + diff +
+							     9,
+						     coord_name.array);
+
+				} else {
+					pos = strstr(effect_text.array + diff +
+							     coord_name.len,
+						     coord_name.array);
+				}
+			}
+		}
 	}
 	dstr_free(&coord_name);
+
+	convert_if0(&effect_text);
 
 	dstr_replace(&effect_text, "varying vec3", "//varying vec3");
 	dstr_replace(&effect_text, "precision highp float;",
@@ -979,8 +1066,11 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_replace(&effect_text, "fragCoord.xy", "v_in.uv");
 		dstr_replace(&effect_text, "fragCoord", "float3(v_in.uv,0.0)");
 	} else {
-
+		dstr_replace(&effect_text, "fragCoord.xy/iResolution.xy",
+			     "v_in.uv");
 		dstr_replace(&effect_text, "fragCoord.xy / iResolution.xy",
+			     "v_in.uv");
+		dstr_replace(&effect_text, "fragCoord/iResolution.xy",
 			     "v_in.uv");
 		dstr_replace(&effect_text, "fragCoord / iResolution.xy",
 			     "v_in.uv");
@@ -1016,6 +1106,8 @@ static bool shader_filter_convert(obs_properties_t *props,
 	convert_float_init(&effect_text, "float3(", 3);
 	convert_float_init(&effect_text, "float4(", 4);
 
+	convert_atan_single(&effect_text);
+
 	dstr_cat(&return_color_name, "=");
 	dstr_replace(&effect_text, return_color_name.array, "return ");
 	dstr_replace(&return_color_name, "=", " =");
@@ -1032,7 +1124,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_cat(&insert_text, "#define mat2 float2x2\n");
 	if (dstr_find(&effect_text, "mat3"))
 		dstr_cat(&insert_text, "#define mat3 float3x3\n");
-	if (dstr_find(&effect_text, "mat3"))
+	if (dstr_find(&effect_text, "mat4"))
 		dstr_cat(&insert_text, "#define mat4 float4x4\n");
 	if (dstr_find(&effect_text, "fract("))
 		dstr_cat(&insert_text, "#define fract frac\n");
@@ -1050,10 +1142,16 @@ static bool shader_filter_convert(obs_properties_t *props,
 	struct dstr replacing = {0};
 	struct dstr replacement = {0};
 
+	size_t texture_diff = 8;
 	char *texture = strstr(effect_text.array, "texture(");
+	if (!texture) {
+		texture = strstr(effect_text.array, "texture2D(");
+		if (texture)
+			texture_diff = 10;
+	}
 	while (texture) {
 		const size_t diff = texture - effect_text.array;
-		char *start = texture + 8;
+		char *start = texture + texture_diff;
 		while (*start == ' ')
 			start++;
 		char *end = start;
@@ -1082,7 +1180,14 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_replace(&effect_text, replacing.array, replacement.array);
 		num_textures++;
 
-		texture = strstr(effect_text.array + diff + 8, "texture(");
+		if (texture_diff == 10)
+			texture =
+				strstr(effect_text.array + diff + texture_diff,
+				       "texture2D(");
+		else
+			texture =
+				strstr(effect_text.array + diff + texture_diff,
+				       "texture(");
 	}
 	dstr_free(&replacing);
 	dstr_free(&replacement);
