@@ -1094,6 +1094,95 @@ static void convert_define(struct dstr *effect_text)
 	}
 }
 
+static void convert_return(struct dstr *effect_text, struct dstr *var_name)
+{
+	size_t count = 0;
+	char *pos = strstr(effect_text->array, var_name->array);
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *ch = pos + var_name->len;
+		while (*ch == ' ')
+			ch++;
+
+		if (*ch == '=' ||
+		    (*(ch + 1) == '=' &&
+		     (*ch == '*' || *ch == '/' || *ch == '+' || *ch == '-'))) {
+			count++;
+		}
+
+		pos = strstr(effect_text->array + diff + var_name->len,
+			     var_name->array);
+	}
+	if (count == 0)
+		return;
+	if (count == 1) {
+		pos = strstr(effect_text->array, var_name->array);
+		while (pos) {
+			size_t diff = pos - effect_text->array;
+			char *ch = pos + var_name->len;
+			while (*ch == ' ')
+				ch++;
+
+			if (*ch == '=') {
+				dstr_remove(effect_text, diff, ch - pos + 1);
+				dstr_insert(effect_text, diff, "return ");
+				return;
+			} else if (*(ch + 1) == '=' &&
+				   (*ch == '*' || *ch == '/' || *ch == '+' ||
+				    *ch == '-')) {
+				dstr_remove(effect_text, diff, ch - pos + 2);
+				dstr_insert(effect_text, diff, "return ");
+				return;
+			}
+
+			pos = strstr(effect_text->array + diff + var_name->len,
+				     var_name->array);
+		}
+		return;
+	}
+
+	size_t replaced = 0;
+	pos = strstr(effect_text->array, var_name->array);
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *ch = pos + var_name->len;
+		while (*ch == ' ')
+			ch++;
+
+		if (*ch == '=') {
+			replaced++;
+			if (replaced == 1) {
+				dstr_insert(effect_text, diff, "float4 ");
+				diff += 7;
+			} else if (replaced == count) {
+				dstr_remove(effect_text, diff, ch - pos + 1);
+				dstr_insert(effect_text, diff, "return ");
+				return;
+			}
+		} else if (*(ch + 1) == '=' && (*ch == '*' || *ch == '/' ||
+						*ch == '+' || *ch == '-')) {
+			replaced++;
+			if (replaced == 1) {
+				dstr_remove(effect_text,
+					    ch - effect_text->array, 1);
+				dstr_insert(effect_text, diff, "float4 ");
+				diff += 6;
+			} else if (replaced == count) {
+				while (*ch != ';' && *ch != 0)
+					ch++;
+				diff = ch - effect_text->array + 1;
+				dstr_insert(effect_text, diff, ";");
+				dstr_insert(effect_text, diff, var_name->array);
+				dstr_insert(effect_text, diff, "\n\treturn ");
+				return;
+			}
+		}
+
+		pos = strstr(effect_text->array + diff + var_name->len,
+			     var_name->array);
+	}
+}
+
 static bool shader_filter_convert(obs_properties_t *props,
 				  obs_property_t *property, void *data)
 {
@@ -1311,10 +1400,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 	dstr_replace(&effect_text, "point(", "point2(");
 	dstr_replace(&effect_text, "line(", "line2(");
 
-	dstr_cat(&return_color_name, "=");
-	dstr_replace(&effect_text, return_color_name.array, "return ");
-	dstr_replace(&return_color_name, "=", " =");
-	dstr_replace(&effect_text, return_color_name.array, "return ");
+	convert_return(&effect_text, &return_color_name);
 
 	dstr_free(&return_color_name);
 
@@ -1357,13 +1443,17 @@ static bool shader_filter_convert(obs_properties_t *props,
 	struct dstr replacing = {0};
 	struct dstr replacement = {0};
 
-	size_t texture_diff = 8;
-	char *texture = strstr(effect_text.array, "texture(");
+	char *texture_find = "texture(";
+	char *texture = strstr(effect_text.array, texture_find);
 	if (!texture) {
-		texture = strstr(effect_text.array, "texture2D(");
-		if (texture)
-			texture_diff = 10;
+		texture_find = "texture2D(";
+		texture = strstr(effect_text.array, texture_find);
 	}
+	if (!texture) {
+		texture_find = "texelFetch(";
+		texture = strstr(effect_text.array, texture_find);
+	}
+	size_t texture_diff = strlen(texture_find);
 	while (texture) {
 		const size_t diff = texture - effect_text.array;
 		if (is_var_char(*(texture - 1))) {
@@ -1403,16 +1493,19 @@ static bool shader_filter_convert(obs_properties_t *props,
 			dstr_cat(&replacement, "image.Sample(textureSampler");
 		}
 		dstr_replace(&effect_text, replacing.array, replacement.array);
+
+		dstr_copy(&replacing, "textureSize(");
+		dstr_cat(&replacing, texture_name.array);
+		dstr_cat(&replacing, ", 0)");
+
+		dstr_replace(&effect_text, replacing.array, "uv_size");
+		dstr_replace(&replacing, ", 0)", ",0)");
+		dstr_replace(&effect_text, replacing.array, "uv_size");
+
 		num_textures++;
 
-		if (texture_diff == 10)
-			texture =
-				strstr(effect_text.array + diff + texture_diff,
-				       "texture2D(");
-		else
-			texture =
-				strstr(effect_text.array + diff + texture_diff,
-				       "texture(");
+		texture = strstr(effect_text.array + diff + texture_diff,
+				 texture_find);
 	}
 	dstr_free(&replacing);
 	dstr_free(&replacement);
