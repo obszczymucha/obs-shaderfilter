@@ -897,25 +897,64 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 		char *end = strstr(pos + len, ")");
 		char *comma = strstr(pos + len, ",");
 		if (end && (!begin || end < begin) && (!comma || end < comma)) {
-			bool only_numbers_or_vars = true;
+			bool only_numbers = true;
 			for (char *ch = pos + len; ch < end; ch++) {
-				if (!is_var_char(*ch) && *ch != '.' &&
+				if ((*ch < '0' || *ch > '9') && *ch != '.' &&
 				    *ch != ' ' && *ch != '+' && *ch != '-' &&
 				    *ch != '*' && *ch != '/') {
-					only_numbers_or_vars = false;
+					only_numbers = false;
 					break;
 				}
 			}
-			bool only_float = false;
-			if (!only_numbers_or_vars) {
-				struct dstr find = {0};
-				dstr_init_copy(&find, "float ");
-				dstr_ncat(&find, pos + len, end - (pos + len));
-				if (strstr(effect_text->array, find.array))
-					only_float = true;
-				dstr_free(&find);
+			bool only_float = true;
+			if (!only_numbers) {
+				begin = pos + len;
+				while (begin && begin < end && only_float) {
+					while (*begin == ' ')
+						begin++;
+					if ((*begin >= '0' && *begin <= '9') ||
+					    *begin == '.' || *begin == '+' ||
+					    *begin == '-' || *begin == '*' ||
+					    *begin == '/') {
+						begin++;
+					} else if (is_var_char(*begin)) {
+						char *var_end = begin;
+						while (is_var_char(*var_end))
+							var_end++;
+						if (*var_end == '.') {
+							size_t c = 1;
+							while (is_var_char(
+								*(var_end + c)))
+								c++;
+							if (c != 2)
+								only_float =
+									false;
+							begin = var_end + c;
+						} else {
+							struct dstr find = {0};
+							dstr_init_copy(
+								&find,
+								"float ");
+							dstr_ncat(
+								&find, begin,
+								var_end -
+									begin);
+							if (strstr(effect_text
+									   ->array,
+								   find.array) ==
+							    NULL)
+								only_float =
+									false;
+							dstr_free(&find);
+							begin = var_end;
+						}
+
+					} else {
+						only_float = false;
+					}
+				}
 			}
-			if (only_numbers_or_vars || only_float) {
+			if (only_numbers || only_float) {
 				//only 1 simple arg in the float4
 				struct dstr found = {0};
 				dstr_init(&found);
