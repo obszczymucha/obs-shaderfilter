@@ -126,6 +126,9 @@ struct effect_param_data {
 		long long i;
 		double f;
 		char *string;
+		struct vec2 vec2;
+		struct vec3 vec3;
+		struct vec4 vec4;
 	} value;
 	char *label;
 	union {
@@ -1629,9 +1632,134 @@ static obs_properties_t *shader_filter_properties(void *data)
 		case GS_SHADER_PARAM_INT3:
 
 			break;
+		case GS_SHADER_PARAM_VEC2: {
+			double range_min = param->minimum.f;
+			double range_max = param->maximum.f;
+			double step = param->step.f;
+			if (range_min == range_max) {
+				range_min = -1000.0;
+				range_max = 1000.0;
+				step = 0.0001;
+			}
+
+			bool slider = (widget_type != NULL &&
+				       strcmp(widget_type, "slider") == 0);
+
+			for (size_t i = 0; i < 2; i++) {
+				dstr_printf(&sources_name, "%s_%zu", param_name,
+					    i);
+				if (i < param->option_labels.num) {
+					if (slider) {
+						obs_properties_add_float_slider(
+							group,
+							sources_name.array,
+							param->option_labels
+								.array[i]
+								.array,
+							range_min, range_max,
+							step);
+					} else {
+						obs_properties_add_float(
+							group,
+							sources_name.array,
+							param->option_labels
+								.array[i]
+								.array,
+							range_min, range_max,
+							step);
+					}
+				} else if (slider) {
+
+					obs_properties_add_float_slider(
+						group, sources_name.array,
+						display_name.array, range_min,
+						range_max, step);
+				} else {
+					obs_properties_add_float(
+						group, sources_name.array,
+						display_name.array, range_min,
+						range_max, step);
+				}
+			}
+			dstr_free(&sources_name);
+
+			break;
+		}
+		case GS_SHADER_PARAM_VEC3:
+			if (widget_type != NULL &&
+			    strcmp(widget_type, "slider") == 0) {
+				double range_min = param->minimum.f;
+				double range_max = param->maximum.f;
+				double step = param->step.f;
+				if (range_min == range_max) {
+					range_min = -1000.0;
+					range_max = 1000.0;
+					step = 0.0001;
+				}
+				for (size_t i = 0; i < 3; i++) {
+					dstr_printf(&sources_name, "%s_%zu",
+						    param_name, i);
+					if (i < param->option_labels.num) {
+						obs_properties_add_float_slider(
+							group,
+							sources_name.array,
+							param->option_labels
+								.array[i]
+								.array,
+							range_min, range_max,
+							step);
+					} else {
+						obs_properties_add_float_slider(
+							group,
+							sources_name.array,
+							display_name.array,
+							range_min, range_max,
+							step);
+					}
+				}
+				dstr_free(&sources_name);
+			} else {
+				obs_properties_add_color(group, param_name,
+							 display_name.array);
+			}
+			break;
 		case GS_SHADER_PARAM_VEC4:
-			obs_properties_add_color_alpha(group, param_name,
-						       display_name.array);
+			if (widget_type != NULL &&
+			    strcmp(widget_type, "slider") == 0) {
+				double range_min = param->minimum.f;
+				double range_max = param->maximum.f;
+				double step = param->step.f;
+				if (range_min == range_max) {
+					range_min = -1000.0;
+					range_max = 1000.0;
+					step = 0.0001;
+				}
+				for (size_t i = 0; i < 4; i++) {
+					dstr_printf(&sources_name, "%s_%zu",
+						    param_name, i);
+					if (i < param->option_labels.num) {
+						obs_properties_add_float_slider(
+							group,
+							sources_name.array,
+							param->option_labels
+								.array[i]
+								.array,
+							range_min, range_max,
+							step);
+					} else {
+						obs_properties_add_float_slider(
+							group,
+							sources_name.array,
+							display_name.array,
+							range_min, range_max,
+							step);
+					}
+				}
+				dstr_free(&sources_name);
+			} else {
+				obs_properties_add_color_alpha(
+					group, param_name, display_name.array);
+			}
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
 			if (widget_type != NULL &&
@@ -1757,18 +1885,93 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 							 *(int *)default_value);
 			param->value.i = obs_data_get_int(settings, param_name);
 			break;
-		case GS_SHADER_PARAM_VEC4: { // Assumed to be a color.
-			struct vec4 *rgba = default_value;
-			if (rgba != NULL) {
-				obs_data_set_default_int(settings, param_name,
-							 vec4_to_rgba(rgba));
-			} else {
-				// Hack to ensure we have a default...(white)
-				obs_data_set_default_int(settings, param_name,
-							 0xffffffff);
+		case GS_SHADER_PARAM_VEC2: {
+			struct vec2 *xy = default_value;
+
+			for (size_t i = 0; i < 2; i++) {
+				dstr_printf(&sources_name, "%s_%zu", param_name,
+					    i);
+				if (xy != NULL)
+					obs_data_set_default_double(
+						settings, sources_name.array,
+						xy->ptr[i]);
+				param->value.vec2.ptr[i] =
+					(float)obs_data_get_double(
+						settings, sources_name.array);
 			}
-			param->value.i = (uint32_t)obs_data_get_int(settings,
-								    param_name);
+			dstr_free(&sources_name);
+			break;
+		}
+		case GS_SHADER_PARAM_VEC3: {
+			struct vec3 *rgb = default_value;
+			if (param->widget_type.array &&
+			    strcmp(param->widget_type.array, "slider") == 0) {
+				for (size_t i = 0; i < 3; i++) {
+					dstr_printf(&sources_name, "%s_%zu",
+						    param_name, i);
+					if (rgb != NULL)
+						obs_data_set_default_double(
+							settings,
+							sources_name.array,
+							rgb->ptr[i]);
+					param->value.vec3.ptr[i] =
+						(float)obs_data_get_double(
+							settings,
+							sources_name.array);
+				}
+				dstr_free(&sources_name);
+			} else {
+				if (rgb != NULL) {
+					struct vec4 rgba;
+					vec4_from_vec3(&rgba, rgb);
+					obs_data_set_default_int(
+						settings, param_name,
+						vec4_to_rgba(&rgba));
+				} else {
+					// Hack to ensure we have a default...(white)
+					obs_data_set_default_int(settings,
+								 param_name,
+								 0xffffffff);
+				}
+				vec4_from_rgba(&param->value.vec4,
+					       (uint32_t)obs_data_get_int(
+						       settings, param_name));
+			}
+			break;
+		}
+		case GS_SHADER_PARAM_VEC4: {
+			struct vec4 *rgba = default_value;
+			if (param->widget_type.array &&
+			    strcmp(param->widget_type.array, "slider") == 0) {
+				for (size_t i = 0; i < 4; i++) {
+					dstr_printf(&sources_name, "%s_%zu",
+						    param_name, i);
+					if (rgba != NULL)
+						obs_data_set_default_double(
+							settings,
+							sources_name.array,
+							rgba->ptr[i]);
+					param->value.vec4.ptr[i] =
+						(float)obs_data_get_double(
+							settings,
+							sources_name.array);
+				}
+				dstr_free(&sources_name);
+			} else {
+				if (rgba != NULL) {
+					obs_data_set_default_int(
+						settings, param_name,
+						vec4_to_rgba(rgba));
+				} else {
+					// Hack to ensure we have a default...(white)
+					obs_data_set_default_int(settings,
+								 param_name,
+								 0xffffffff);
+				}
+				vec4_from_rgba(&param->value.vec4,
+					       (uint32_t)obs_data_get_int(
+						       settings, param_name));
+			}
 			break;
 		}
 		case GS_SHADER_PARAM_TEXTURE:
@@ -2126,7 +2329,6 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 	for (size_t param_index = 0; param_index < param_count; param_index++) {
 		struct effect_param_data *param =
 			(filter->stored_param_list.array + param_index);
-		struct vec4 color;
 		obs_source_t *source = NULL;
 
 		switch (param->type) {
@@ -2140,9 +2342,14 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 		case GS_SHADER_PARAM_INT:
 			gs_effect_set_int(param->param, (int)param->value.i);
 			break;
+		case GS_SHADER_PARAM_VEC2:
+			gs_effect_set_vec2(param->param, &param->value.vec2);
+			break;
+		case GS_SHADER_PARAM_VEC3:
+			gs_effect_set_vec3(param->param, &param->value.vec3);
+			break;
 		case GS_SHADER_PARAM_VEC4:
-			vec4_from_rgba(&color, (unsigned int)param->value.i);
-			gs_effect_set_vec4(param->param, &color);
+			gs_effect_set_vec4(param->param, &param->value.vec4);
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
 			source = obs_weak_source_get_source(param->source);
