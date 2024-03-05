@@ -2,18 +2,34 @@
 // Adjusted Saturation Shader for obs-shaderfilter using HLSL conventions
 
 uniform float hslSaturationFactor<
-    string label = "HSL Saturation";
+    string label = "HSL Sat Gain";
     string widget_type = "slider";
     float minimum = 0.0;
     float maximum = 5.0;
     float step = 0.01;
 > = 1.0;
 
+uniform float hslGamma<
+    string label = "HSL Sat Gamma";
+    string widget_type = "slider";
+    float minimum = 0.1;
+    float maximum = 10.0;
+    float step = 0.01;
+> = 1.0;
+
 uniform float hsvSaturationFactor<
-    string label = "HSV Saturation";
+    string label = "HSV Sat Gain";
     string widget_type = "slider";
     float minimum = 0.0;
     float maximum = 5.0;
+    float step = 0.01;
+> = 1.0;
+
+uniform float hsvGamma<
+    string label = "HSV Sat Gamma";
+    string widget_type = "slider";
+    float minimum = 0.1;
+    float maximum = 10.0;
     float step = 0.01;
 > = 1.0;
 
@@ -23,11 +39,6 @@ uniform float adjustmentOrder<
     float maximum = 3;
     float step = 1;
 > = 1;
-
-uniform string notes<
-    string widget_type = "info";
-> = "Order:\n1 = Blended average result of HSL/HSV\n2 = HSL first\n3 = HSV first";
-
 
 // HSV conversion
 
@@ -100,10 +111,12 @@ float3 adjustColorWithOrder(float3 originalColor) {
     if (adjustmentOrder == 1.0) {
         // Parallel adjustment (both HSL and HSV operate on the original image and then blend)
         float3 hslAdjusted = rgb2hsl(originalColor);
+        hslAdjusted.y = pow(hslAdjusted.y, (1/hslGamma));
         hslAdjusted.y *= hslSaturationFactor;
         float3 hslAdjustedColor = hsl2rgb(hslAdjusted);
         
         float3 hsvAdjusted = rgb2hsv(originalColor);
+        hsvAdjusted.y = pow(hsvAdjusted.y, (1/hsvGamma));
         hsvAdjusted.y *= hsvSaturationFactor;
         float3 hsvAdjustedColor = hsv2rgb(hsvAdjusted);
         
@@ -113,18 +126,22 @@ float3 adjustColorWithOrder(float3 originalColor) {
     else if (adjustmentOrder == 2.0) {
         // HSL first, then HSV
         float3 hslAdjusted = rgb2hsl(originalColor);
+        hslAdjusted.y = pow(hslAdjusted.y, (1/hslGamma));
         hslAdjusted.y *= hslSaturationFactor;
         float3 afterHSL = hsl2rgb(hslAdjusted);
         float3 hsvAdjusted = rgb2hsv(afterHSL);
+        hsvAdjusted.y = pow(hsvAdjusted.y, (1/hsvGamma));
         hsvAdjusted.y *= hsvSaturationFactor;
         return hsv2rgb(hsvAdjusted);
     } 
     else if (adjustmentOrder == 3.0) {
         // HSV first, then HSL
         float3 hsvAdjusted = rgb2hsv(originalColor);
+        hsvAdjusted.y = pow(hsvAdjusted.y, (1/hsvGamma));
         hsvAdjusted.y *= hsvSaturationFactor;
         float3 afterHSV = hsv2rgb(hsvAdjusted);
         float3 hslAdjusted = rgb2hsl(afterHSV);
+        hslAdjusted.y = pow(hslAdjusted.y, (1/hslGamma));
         hslAdjusted.y *= hslSaturationFactor;
         return hsl2rgb(hslAdjusted);
     }
