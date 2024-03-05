@@ -846,6 +846,46 @@ static void convert_atan_single(struct dstr *effect_text)
 	}
 }
 
+static bool is_var_char(char ch)
+{
+	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
+	       (ch >= 'A' && ch <= 'Z') || ch == '_';
+}
+
+static void convert_mul(struct dstr *effect_text)
+{
+	char *pos = strstr(effect_text->array, "*=");
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *end = pos;
+		end--;
+		while (*end == ' ' && end > effect_text->array)
+			end--;
+		char *start = end;
+		while ((is_var_char(*start) || *start == '.') &&
+		       start > effect_text->array)
+			start--;
+		start++;
+		end++;
+
+		struct dstr insert = {0};
+		dstr_init_copy(&insert, " mul(");
+		dstr_ncat(&insert, start, end - start);
+		dstr_cat(&insert, ",");
+		dstr_remove(effect_text, diff, 1);
+		dstr_insert(effect_text, diff + 1, insert.array);
+		dstr_free(&insert);
+
+		char *line_end = effect_text->array + diff;
+		while (*line_end != ';' && *line_end != 0)
+			line_end++;
+
+		dstr_insert(effect_text, line_end - effect_text->array, ")");
+
+		pos = strstr(effect_text->array + diff + 2, "*=");
+	}
+}
+
 static void convert_float_init(struct dstr *effect_text, char *name, int count)
 {
 	const size_t len = strlen(name);
@@ -857,17 +897,17 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 		char *end = strstr(pos + len, ")");
 		char *comma = strstr(pos + len, ",");
 		if (end && (!begin || end < begin) && (!comma || end < comma)) {
-			bool only_numbers = true;
+			bool only_numbers_or_vars = true;
 			for (char *ch = pos + len; ch < end; ch++) {
-				if ((*ch < '0' || *ch > '9') && *ch != '.' &&
+				if (!is_var_char(*ch) && *ch != '.' &&
 				    *ch != ' ' && *ch != '+' && *ch != '-' &&
 				    *ch != '*' && *ch != '/') {
-					only_numbers = false;
+					only_numbers_or_vars = false;
 					break;
 				}
 			}
 			bool only_float = false;
-			if (!only_numbers) {
+			if (!only_numbers_or_vars) {
 				struct dstr find = {0};
 				dstr_init_copy(&find, "float ");
 				dstr_ncat(&find, pos + len, end - (pos + len));
@@ -875,7 +915,7 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 					only_float = true;
 				dstr_free(&find);
 			}
-			if (only_numbers || only_float) {
+			if (only_numbers_or_vars || only_float) {
 				//only 1 simple arg in the float4
 				struct dstr found = {0};
 				dstr_init(&found);
@@ -1010,12 +1050,6 @@ static void convert_define(struct dstr *effect_text)
 		}
 		dstr_free(&def_name);
 	}
-}
-
-static bool is_var_char(char ch)
-{
-	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
-	       (ch >= 'A' && ch <= 'Z') || ch == '_';
 }
 
 static bool shader_filter_convert(obs_properties_t *props,
@@ -1230,6 +1264,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 	convert_float_init(&effect_text, "float4(", 4);
 
 	convert_atan_single(&effect_text);
+	convert_mul(&effect_text);
 
 	dstr_replace(&effect_text, "point(", "point2(");
 	dstr_replace(&effect_text, "line(", "line2(");
@@ -1289,6 +1324,17 @@ static bool shader_filter_convert(obs_properties_t *props,
 	}
 	while (texture) {
 		const size_t diff = texture - effect_text.array;
+		if (is_var_char(*(texture - 1))) {
+			if (texture_diff == 10)
+				texture = strstr(effect_text.array + diff +
+							 texture_diff,
+						 "texture2D(");
+			else
+				texture = strstr(effect_text.array + diff +
+							 texture_diff,
+						 "texture(");
+			continue;
+		}
 		char *start = texture + texture_diff;
 		while (*start == ' ')
 			start++;
@@ -1296,19 +1342,18 @@ static bool shader_filter_convert(obs_properties_t *props,
 		while (*end != ' ' && *end != ',' && *end != ')' &&
 		       *end != '\n' && *end != 0)
 			end++;
-		texture_name.len = 0;
+		dstr_copy(&texture_name, "");
 		dstr_ncat(&texture_name, start, end - start);
 
-		replacing.len = 0;
+		dstr_copy(&replacing, "");
 		dstr_ncat(&replacing, texture, end - texture);
 
-		replacement.len = 0;
+		dstr_copy(&replacement, "");
 
 		if (num_textures) {
 			dstr_cat_dstr(&replacement, &texture_name);
 			dstr_cat(&replacement, ".Sample(textureSampler");
 
-			dstr_insert(&effect_text, diff, texture_name.array);
 			dstr_cat(&insert_text, "uniform texture2d ");
 			dstr_cat(&insert_text, texture_name.array);
 			dstr_cat(&insert_text, ";\n");
