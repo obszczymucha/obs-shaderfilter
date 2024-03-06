@@ -577,7 +577,10 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 							  annotation_default);
 				} else if (strcmp(info.name, "minimum") == 0) {
 					if (info.type ==
-					    GS_SHADER_PARAM_FLOAT) {
+						    GS_SHADER_PARAM_FLOAT ||
+					    info.type == GS_SHADER_PARAM_VEC2 ||
+					    info.type == GS_SHADER_PARAM_VEC3 ||
+					    info.type == GS_SHADER_PARAM_VEC4) {
 						cached_data->minimum.f = *(
 							float *)annotation_default;
 					} else if (info.type ==
@@ -587,7 +590,10 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 					}
 				} else if (strcmp(info.name, "maximum") == 0) {
 					if (info.type ==
-					    GS_SHADER_PARAM_FLOAT) {
+						    GS_SHADER_PARAM_FLOAT ||
+					    info.type == GS_SHADER_PARAM_VEC2 ||
+					    info.type == GS_SHADER_PARAM_VEC3 ||
+					    info.type == GS_SHADER_PARAM_VEC4) {
 						cached_data->maximum.f = *(
 							float *)annotation_default;
 					} else if (info.type ==
@@ -597,7 +603,10 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 					}
 				} else if (strcmp(info.name, "step") == 0) {
 					if (info.type ==
-					    GS_SHADER_PARAM_FLOAT) {
+						    GS_SHADER_PARAM_FLOAT ||
+					    info.type == GS_SHADER_PARAM_VEC2 ||
+					    info.type == GS_SHADER_PARAM_VEC3 ||
+					    info.type == GS_SHADER_PARAM_VEC4) {
 						cached_data->step.f = *(
 							float *)annotation_default;
 					} else if (info.type ==
@@ -1094,11 +1103,16 @@ static void convert_define(struct dstr *effect_text)
 	}
 }
 
-static void convert_return(struct dstr *effect_text, struct dstr *var_name)
+static void convert_return(struct dstr *effect_text, struct dstr *var_name,
+			   size_t main_diff)
 {
 	size_t count = 0;
-	char *pos = strstr(effect_text->array, var_name->array);
+	char *pos = strstr(effect_text->array + main_diff, var_name->array);
 	while (pos) {
+		if (is_var_char(*(pos - 1))) {
+			pos = strstr(pos + var_name->len, var_name->array);
+			continue;
+		}
 		size_t diff = pos - effect_text->array;
 		char *ch = pos + var_name->len;
 		while (*ch == ' ')
@@ -1116,8 +1130,13 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name)
 	if (count == 0)
 		return;
 	if (count == 1) {
-		pos = strstr(effect_text->array, var_name->array);
+		pos = strstr(effect_text->array + main_diff, var_name->array);
 		while (pos) {
+			if (is_var_char(*(pos - 1))) {
+				pos = strstr(pos + var_name->len,
+					     var_name->array);
+				continue;
+			}
 			size_t diff = pos - effect_text->array;
 			char *ch = pos + var_name->len;
 			while (*ch == ' ')
@@ -1142,7 +1161,18 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name)
 	}
 
 	size_t replaced = 0;
-	pos = strstr(effect_text->array, var_name->array);
+	bool declared = false;
+	pos = strstr(effect_text->array + main_diff, "{");
+	if (pos) {
+		size_t insert_diff = pos - effect_text->array + 1;
+		dstr_insert(effect_text, insert_diff,
+			    " = float4(0.0,0.0,0.0,1.0);\n");
+		dstr_insert(effect_text, insert_diff, var_name->array);
+		dstr_insert(effect_text, insert_diff, "\n\tfloat4 ");
+		declared = true;
+	}
+
+	pos = strstr(effect_text->array + main_diff, var_name->array);
 	while (pos) {
 		size_t diff = pos - effect_text->array;
 		char *ch = pos + var_name->len;
@@ -1151,7 +1181,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name)
 
 		if (*ch == '=') {
 			replaced++;
-			if (replaced == 1) {
+			if (replaced == 1 && !declared) {
 				dstr_insert(effect_text, diff, "float4 ");
 				diff += 7;
 			} else if (replaced == count) {
@@ -1162,7 +1192,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name)
 		} else if (*(ch + 1) == '=' && (*ch == '*' || *ch == '/' ||
 						*ch == '+' || *ch == '-')) {
 			replaced++;
-			if (replaced == 1) {
+			if (replaced == 1 && !declared) {
 				dstr_remove(effect_text,
 					    ch - effect_text->array, 1);
 				dstr_insert(effect_text, diff, "float4 ");
@@ -1304,6 +1334,10 @@ static bool shader_filter_convert(obs_properties_t *props,
 			    "float4 mainImage(VertData v_in) : TARGET");
 	}
 
+	convert_return(&effect_text, &return_color_name, main_diff);
+
+	dstr_free(&return_color_name);
+
 	if (dstr_cmp(&coord_name, "fragCoord") != 0) {
 		if (dstr_find(&coord_name, "fragCoord")) {
 			dstr_replace(&effect_text, coord_name.array,
@@ -1400,10 +1434,6 @@ static bool shader_filter_convert(obs_properties_t *props,
 	dstr_replace(&effect_text, "point(", "point2(");
 	dstr_replace(&effect_text, "line(", "line2(");
 
-	convert_return(&effect_text, &return_color_name);
-
-	dstr_free(&return_color_name);
-
 	dstr_replace(&effect_text, "#version ", "//#version ");
 
 	struct dstr insert_text = {0};
@@ -1428,7 +1458,9 @@ static bool shader_filter_convert(obs_properties_t *props,
 
 	if (dstr_find(&effect_text, "iMouse") &&
 	    !dstr_find(&effect_text, "float2 iMouse"))
-		dstr_cat(&insert_text, "uniform float4 iMouse;\n");
+		dstr_cat(
+			&insert_text,
+			"uniform float4 iMouse<\nstring widget_type = \"slider\";\nfloat minimum=0.0;\nfloat maximum=1000.0;\nfloat step=1.0;\n>;\n");
 
 	if (dstr_find(&effect_text, "iSampleRate") &&
 	    !dstr_find(&effect_text, "float iSampleRate"))
