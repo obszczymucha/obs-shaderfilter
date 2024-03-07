@@ -898,6 +898,224 @@ static void convert_mul(struct dstr *effect_text)
 	}
 }
 
+static void insert_begin_of_block(struct dstr *effect_text, size_t diff,
+				  char *insert)
+{
+	int depth = 0;
+	char *ch = effect_text->array + diff;
+	while (ch > effect_text->array && *ch == ' ')
+		ch--;
+	while (ch > effect_text->array) {
+		while (*ch != '=' && *ch != '(' && *ch != ')' && *ch != '+' &&
+		       *ch != '-' && *ch != '/' && *ch != '*' && *ch != ' ' &&
+		       ch > effect_text->array)
+			ch--;
+		if (*ch == '(') {
+			if (depth == 0) {
+				dstr_insert(effect_text,
+					    ch - effect_text->array + 1,
+					    insert);
+				return;
+			}
+			ch--;
+			depth--;
+		} else if (*ch == ')') {
+			ch--;
+			depth++;
+		} else if (*ch == '=') {
+			dstr_insert(effect_text, ch - effect_text->array + 1,
+				    insert);
+			return;
+		} else if (*ch == '+' || *ch == '-' || *ch == '/' ||
+			   *ch == '*' || *ch == ' ') {
+			if (depth == 0) {
+				dstr_insert(effect_text,
+					    ch - effect_text->array + 1,
+					    insert);
+				return;
+			}
+			ch--;
+		}
+	}
+}
+
+static void insert_end_of_block(struct dstr *effect_text, size_t diff,
+				char *insert)
+{
+	int depth = 0;
+	char *ch = effect_text->array + diff;
+	while (*ch == ' ')
+		ch++;
+	while (*ch != 0) {
+		while (*ch != ';' && *ch != '(' && *ch != ')' && *ch != '+' &&
+		       *ch != '-' && *ch != '/' && *ch != '*' && *ch != ' ' &&
+		       *ch != 0)
+			ch++;
+		if (*ch == '(') {
+			ch++;
+			depth++;
+		} else if (*ch == ')') {
+			if (depth == 0) {
+				dstr_insert(effect_text,
+					    ch - effect_text->array, insert);
+				return;
+			}
+			ch++;
+			depth--;
+		} else if (*ch == ';') {
+			dstr_insert(effect_text, ch - effect_text->array,
+				    insert);
+			return;
+		} else if (*ch == '+' || *ch == '-' || *ch == '/' ||
+			   *ch == '*' || *ch == ' ') {
+			if (depth == 0) {
+				dstr_insert(effect_text,
+					    ch - effect_text->array, insert);
+				return;
+			}
+			ch++;
+		}
+	}
+}
+
+static void convert_mat_mul_var(struct dstr *effect_text,
+				struct dstr *var_function_name)
+{
+	char *pos = strstr(effect_text->array, var_function_name->array);
+	while (pos) {
+		if (is_var_char(*(pos - 1)) ||
+		    is_var_char(*(pos + var_function_name->len))) {
+			pos = strstr(pos + var_function_name->len,
+				     var_function_name->array);
+			continue;
+		}
+		size_t diff = pos - effect_text->array;
+		char *ch = pos + var_function_name->len;
+		while (*ch == ' ')
+			ch++;
+		if (*ch == '*') {
+			size_t diff3 = ch - effect_text->array + 1;
+			*ch = ',';
+			insert_end_of_block(effect_text, diff3, ")");
+			dstr_insert(effect_text, diff, "mul(");
+			pos = strstr(effect_text->array + diff + 4 +
+					     var_function_name->len,
+				     var_function_name->array);
+			continue;
+		}
+		ch = pos - 1;
+		while (*ch == ' ')
+			ch--;
+		if (*ch == '*') {
+			size_t diff2 = ch - effect_text->array;
+			*ch = ',';
+			insert_end_of_block(effect_text,
+					    diff + var_function_name->len, ")");
+			insert_begin_of_block(effect_text, diff2, "mul(");
+
+			pos = strstr(effect_text->array + diff + 4 +
+					     var_function_name->len,
+				     var_function_name->array);
+			continue;
+		}
+
+		pos = strstr(effect_text->array + diff + var_function_name->len,
+			     var_function_name->array);
+	}
+}
+
+static void convert_mat_mul(struct dstr *effect_text, char *var_type)
+{
+	size_t len = strlen(var_type);
+	char *pos = strstr(effect_text->array, var_type);
+	while (pos) {
+		if (is_var_char(*(pos - 1))) {
+			pos = strstr(pos + len, var_type);
+			continue;
+		}
+		size_t diff = pos - effect_text->array;
+		char *begin = pos + len;
+		if (*begin == '(') {
+			char *ch = pos - 1;
+			while (*ch == ' ')
+				ch--;
+			if (*ch == '*') {
+				// mat constructor with * in front of it
+				size_t diff2 = ch - effect_text->array;
+				*ch = ',';
+				insert_end_of_block(effect_text, diff + len,
+						    ")");
+				insert_begin_of_block(effect_text, diff2,
+						      "mul(");
+
+				pos = strstr(effect_text->array + diff + len +
+						     4,
+					     var_type);
+				continue;
+			}
+
+			int depth = 1;
+			ch = begin + 1;
+			while (*ch != 0) {
+				while (*ch != ';' && *ch != '(' && *ch != ')' &&
+				       *ch != '+' && *ch != '-' && *ch != '/' &&
+				       *ch != '*' && *ch != 0)
+					ch++;
+				if (*ch == '(') {
+					ch++;
+					depth++;
+				} else if (*ch == ')') {
+					if (depth == 0) {
+						break;
+					}
+					ch++;
+					depth--;
+				} else if (*ch == '*') {
+					if (depth == 0) {
+						//mat constructor follow by *
+						*ch = ',';
+						insert_end_of_block(
+							effect_text,
+							ch - effect_text->array +
+								1,
+							")");
+						dstr_insert(effect_text, diff,
+							    "mul(");
+						break;
+					}
+					ch++;
+				} else if (*ch == ';') {
+					break;
+				} else if (depth == 0) {
+					break;
+				} else if (*ch != 0) {
+					ch++;
+				}
+			}
+		}
+		if (*begin != ' ') {
+			pos = strstr(pos + len, var_type);
+			continue;
+		}
+		while (*begin == ' ')
+			begin++;
+		if (!is_var_char(*begin)) {
+			pos = strstr(pos + len, var_type);
+			continue;
+		}
+		char *end = begin;
+		while (is_var_char(*end))
+			end++;
+		struct dstr var_function_name = {0};
+		dstr_ncat(&var_function_name, begin, end - begin);
+
+		convert_mat_mul_var(effect_text, &var_function_name);
+		dstr_free(&var_function_name);
+
+		pos = strstr(effect_text->array + diff + len, var_type);
+	}
+}
+
 static void convert_float_init(struct dstr *effect_text, char *name, int count)
 {
 	const size_t len = strlen(name);
@@ -905,91 +1123,179 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 	char *pos = strstr(effect_text->array, name);
 	while (pos) {
 		size_t diff = pos - effect_text->array;
-		char *begin = strstr(pos + len, "(");
-		char *end = strstr(pos + len, ")");
-		char *comma = strstr(pos + len, ",");
-		if (end && (!begin || end < begin) && (!comma || end < comma)) {
-			bool only_numbers = true;
-			for (char *ch = pos + len; ch < end; ch++) {
-				if ((*ch < '0' || *ch > '9') && *ch != '.' &&
-				    *ch != ' ' && *ch != '+' && *ch != '-' &&
-				    *ch != '*' && *ch != '/') {
-					only_numbers = false;
+		char *ch = pos + len;
+		int depth = 0;
+		int function_depth = -1;
+		bool only_one = false;
+		bool only_numbers = true;
+		bool only_float = true;
+		while (*ch != 0 && (only_numbers || only_float)) {
+			if (*ch == '(') {
+				depth++;
+			} else if (*ch == ')') {
+				if (depth == 0) {
+					only_one = true;
 					break;
 				}
-			}
-			bool only_float = true;
-			if (!only_numbers) {
-				begin = pos + len;
-				while (begin && begin < end && only_float) {
-					while (*begin == ' ')
-						begin++;
-					if ((*begin >= '0' && *begin <= '9') ||
-					    *begin == '.' || *begin == '+' ||
-					    *begin == '-' || *begin == '*' ||
-					    *begin == '/') {
-						begin++;
-					} else if (is_var_char(*begin)) {
-						char *var_end = begin;
-						while (is_var_char(*var_end))
-							var_end++;
-						if (*var_end == '.') {
-							size_t c = 1;
-							while (is_var_char(
-								*(var_end + c)))
-								c++;
-							if (c != 2)
-								only_float =
-									false;
-							begin = var_end + c;
-						} else {
-							struct dstr find = {0};
-							dstr_init_copy(
-								&find,
-								"float ");
-							dstr_ncat(
-								&find, begin,
-								var_end -
-									begin);
-							if (strstr(effect_text
-									   ->array,
-								   find.array) ==
-							    NULL)
-								only_float =
-									false;
-							dstr_free(&find);
-							begin = var_end;
-						}
-
-					} else {
+				depth--;
+				if (depth == function_depth) {
+					function_depth = -1;
+				}
+			} else if (*ch == ',') {
+				if (depth == 0) {
+					only_one = false;
+					break;
+				}
+			} else if (*ch == ';') {
+				only_one = false;
+				break;
+			} else if (is_var_char(*ch) &&
+				   (*ch < '0' || *ch > '9')) {
+				only_numbers = false;
+				char *begin = ch;
+				while (is_var_char(*ch))
+					ch++;
+				if (*ch == '.') {
+					size_t c = 1;
+					while (is_var_char(*(ch + c)))
+						c++;
+					if (c != 2 && function_depth < 0)
 						only_float = false;
+					ch += c - 1;
+				} else if (function_depth >= 0) {
+					ch--;
+				} else if (*ch == '(' &&
+					   (strncmp(begin, "length(", 7) == 0 ||
+					    strncmp(begin, "float(", 6) == 0 ||
+					    strncmp(begin, "asfloat(", 8) ==
+						    0 ||
+					    strncmp(begin, "asdouble(", 9) ==
+						    0 ||
+					    strncmp(begin, "asint(", 6) == 0 ||
+					    strncmp(begin, "asuint(", 7) == 0 ||
+					    strncmp(begin, "determinant(",
+						    12) == 0 ||
+					    strncmp(begin, "distance(", 9) ==
+						    0 ||
+					    strncmp(begin, "dot(", 4) == 0 ||
+					    strncmp(begin, "countbits(", 10) ==
+						    0 ||
+					    strncmp(begin, "firstbithigh(",
+						    13) == 0 ||
+					    strncmp(begin, "firstbitlow(",
+						    12) == 0 ||
+					    strncmp(begin, "reversebits(",
+						    12) == 0)) {
+					function_depth = depth;
+					depth++;
+				} else if (*ch == '(' &&
+					   (strncmp(begin, "abs(", 4) == 0 ||
+					    strncmp(begin, "acos(", 5) == 0 ||
+					    strncmp(begin, "asin(", 5) == 0 ||
+					    strncmp(begin, "atan(", 5) == 0 ||
+					    strncmp(begin, "atan2(", 6) == 0 ||
+					    strncmp(begin, "ceil(", 5) == 0 ||
+					    strncmp(begin, "clamp(", 6) == 0 ||
+					    strncmp(begin, "cos(", 4) == 0 ||
+					    strncmp(begin, "cosh(", 5) == 0 ||
+					    strncmp(begin, "ddx(", 4) == 0 ||
+					    strncmp(begin, "ddy(", 4) == 0 ||
+					    strncmp(begin, "degrees(", 8) ==
+						    0 ||
+					    strncmp(begin, "exp(", 4) == 0 ||
+					    strncmp(begin, "exp2(", 5) == 0 ||
+					    strncmp(begin, "floor(", 6) == 0 ||
+					    strncmp(begin, "fma(", 4) == 0 ||
+					    strncmp(begin, "fmod(", 5) == 0 ||
+					    strncmp(begin, "frac(", 5) == 0 ||
+					    strncmp(begin, "frexp(", 6) == 0 ||
+					    strncmp(begin, "fwidth(", 7) == 0 ||
+					    strncmp(begin, "ldexp(", 6) == 0 ||
+					    strncmp(begin, "lerp(", 5) == 0 ||
+					    strncmp(begin, "log(", 4) == 0 ||
+					    strncmp(begin, "log10(", 6) == 0 ||
+					    strncmp(begin, "log2(", 5) == 0 ||
+					    strncmp(begin, "mad(", 4) == 0 ||
+					    strncmp(begin, "max(", 4) == 0 ||
+					    strncmp(begin, "min(", 4) == 0 ||
+					    strncmp(begin, "modf(", 5) == 0 ||
+					    strncmp(begin, "mod(", 4) == 0 ||
+					    strncmp(begin, "mul(", 4) == 0 ||
+					    strncmp(begin, "normalize(", 10) ==
+						    0 ||
+					    strncmp(begin, "pow(", 4) == 0 ||
+					    strncmp(begin, "radians(", 8) ==
+						    0 ||
+					    strncmp(begin, "rcp(", 4) == 0 ||
+					    strncmp(begin, "reflect(", 8) ==
+						    0 ||
+					    strncmp(begin, "refract(", 8) ==
+						    0 ||
+					    strncmp(begin, "round(", 6) == 0 ||
+					    strncmp(begin, "rsqrt(", 6) == 0 ||
+					    strncmp(begin, "saturate(", 9) ==
+						    0 ||
+					    strncmp(begin, "sign(", 5) == 0 ||
+					    strncmp(begin, "sin(", 4) == 0 ||
+					    strncmp(begin, "sincos(", 7) == 0 ||
+					    strncmp(begin, "sinh(", 5) == 0 ||
+					    strncmp(begin, "smoothstep(", 11) ==
+						    0 ||
+					    strncmp(begin, "sqrt(", 5) == 0 ||
+					    strncmp(begin, "step(", 5) == 0 ||
+					    strncmp(begin, "tan(", 4) == 0 ||
+					    strncmp(begin, "tanh(", 5) == 0 ||
+					    strncmp(begin, "transpose(", 10) ==
+						    0 ||
+					    strncmp(begin, "trunc(", 6) == 0)) {
+					depth++;
+				} else {
+					struct dstr find = {0};
+					dstr_init_copy(&find, "float ");
+					dstr_ncat(&find, begin,
+						  ch - begin +
+							  (*ch == '(' ? 1 : 0));
+					if (strstr(effect_text->array,
+						   find.array) == NULL) {
+
+						only_float = false;
+					} else if (*ch == '(') {
+						function_depth = depth;
 					}
+					dstr_free(&find);
+					ch--;
 				}
+			} else if ((*ch < '0' || *ch > '9') && *ch != '.' &&
+				   *ch != ' ' && *ch != '+' && *ch != '-' &&
+				   *ch != '*' && *ch != '/') {
+				only_numbers = false;
 			}
-			if (only_numbers || only_float) {
-				//only 1 simple arg in the float4
-				struct dstr found = {0};
-				dstr_init(&found);
-				dstr_ncat(&found, pos, end - pos + 1);
-
-				struct dstr replacement = {0};
-				dstr_init_copy(&replacement, name);
-				dstr_ncat(&replacement, pos + len,
-					  end - (pos + len));
-				for (int i = 1; i < count; i++) {
-					dstr_cat(&replacement, ",");
-					dstr_ncat(&replacement, pos + len,
-						  end - (pos + len));
-				}
-				dstr_cat(&replacement, ")");
-
-				dstr_replace(effect_text, found.array,
-					     replacement.array);
-
-				dstr_free(&replacement);
-				dstr_free(&found);
-			}
+			ch++;
 		}
+		if (!only_one || (!only_numbers && !only_float)) {
+			pos = strstr(effect_text->array + diff + len, name);
+			continue;
+		}
+
+		//only 1 simple arg in the float4
+		struct dstr found = {0};
+		dstr_init(&found);
+		dstr_ncat(&found, pos, ch - pos + 1);
+
+		struct dstr replacement = {0};
+		dstr_init_copy(&replacement, name);
+		dstr_ncat(&replacement, pos + len, ch - (pos + len));
+		for (int i = 1; i < count; i++) {
+			dstr_cat(&replacement, ",");
+			dstr_ncat(&replacement, pos + len, ch - (pos + len));
+		}
+		dstr_cat(&replacement, ")");
+
+		dstr_replace(effect_text, found.array, replacement.array);
+
+		dstr_free(&replacement);
+		dstr_free(&found);
+
 		pos = strstr(effect_text->array + diff + len, name);
 	}
 }
@@ -1115,6 +1421,11 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name,
 		}
 		size_t diff = pos - effect_text->array;
 		char *ch = pos + var_name->len;
+		if (*ch == '.') {
+			ch++;
+			while (is_var_char(*ch))
+				ch++;
+		}
 		while (*ch == ' ')
 			ch++;
 
@@ -1139,6 +1450,12 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name,
 			}
 			size_t diff = pos - effect_text->array;
 			char *ch = pos + var_name->len;
+			if (*ch == '.') {
+				ch++;
+				while (is_var_char(*ch))
+					ch++;
+			}
+
 			while (*ch == ' ')
 				ch++;
 
@@ -1161,6 +1478,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name,
 	}
 
 	size_t replaced = 0;
+	size_t start_diff = 0;
 	bool declared = false;
 	pos = strstr(effect_text->array + main_diff, "{");
 	if (pos) {
@@ -1170,33 +1488,68 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name,
 		dstr_insert(effect_text, insert_diff, var_name->array);
 		dstr_insert(effect_text, insert_diff, "\n\tfloat4 ");
 		declared = true;
+		start_diff = insert_diff - main_diff + 37 + var_name->len;
 	}
 
-	pos = strstr(effect_text->array + main_diff, var_name->array);
+	pos = strstr(effect_text->array + main_diff + start_diff,
+		     var_name->array);
 	while (pos) {
 		size_t diff = pos - effect_text->array;
 		char *ch = pos + var_name->len;
+		bool part = false;
+		if (*ch == '.') {
+			part = true;
+			ch++;
+			while (is_var_char(*ch))
+				ch++;
+		}
 		while (*ch == ' ')
 			ch++;
 
 		if (*ch == '=') {
 			replaced++;
 			if (replaced == 1 && !declared) {
-				dstr_insert(effect_text, diff, "float4 ");
-				diff += 7;
+				if (part) {
+					dstr_insert(
+						effect_text, diff,
+						" = float4(0.0,0.0,0.0,1.0);\n");
+					dstr_insert(effect_text, diff,
+						    var_name->array);
+					dstr_insert(effect_text, diff,
+						    "float4 ");
+					diff += 35 + var_name->len;
+				} else {
+					dstr_insert(effect_text, diff,
+						    "float4 ");
+					diff += 7;
+				}
 			} else if (replaced == count) {
-				dstr_remove(effect_text, diff, ch - pos + 1);
-				dstr_insert(effect_text, diff, "return ");
+				if (part) {
+					while (*ch != ';' && *ch != 0)
+						ch++;
+					diff = ch - effect_text->array + 1;
+					dstr_insert(effect_text, diff, ";");
+					dstr_insert(effect_text, diff,
+						    var_name->array);
+					dstr_insert(effect_text, diff,
+						    "\n\treturn ");
+				} else {
+					dstr_remove(effect_text, diff,
+						    ch - pos + 1);
+					dstr_insert(effect_text, diff,
+						    "return ");
+				}
 				return;
 			}
 		} else if (*(ch + 1) == '=' && (*ch == '*' || *ch == '/' ||
 						*ch == '+' || *ch == '-')) {
 			replaced++;
 			if (replaced == 1 && !declared) {
-				dstr_remove(effect_text,
-					    ch - effect_text->array, 1);
+				dstr_insert(effect_text, diff,
+					    " = float4(0.0,0.0,0.0,1.0);\n");
+				dstr_insert(effect_text, diff, var_name->array);
 				dstr_insert(effect_text, diff, "float4 ");
-				diff += 6;
+				diff += 35 + var_name->len;
 			} else if (replaced == count) {
 				while (*ch != ';' && *ch != 0)
 					ch++;
@@ -1419,17 +1772,41 @@ static bool shader_filter_convert(obs_properties_t *props,
 
 	dstr_replace(&effect_text, "uniform float elapsed_time;", "");
 
+	dstr_replace(&effect_text, "ivec4", "int4");
+	dstr_replace(&effect_text, "ivec3", "int3");
+	dstr_replace(&effect_text, "ivec2", "int2");
+
+	dstr_replace(&effect_text, "uvec4", "uint4");
+	dstr_replace(&effect_text, "uvec3", "uint3");
+	dstr_replace(&effect_text, "uvec2", "uint2");
+
 	dstr_replace(&effect_text, "vec4", "float4");
 	dstr_replace(&effect_text, "vec3", "float3");
-
 	dstr_replace(&effect_text, "vec2", "float2");
+
+	//dstr_replace(&effect_text, "mat4", "float4x4");
+	//dstr_replace(&effect_text, "mat3", "float3x3");
+	//dstr_replace(&effect_text, "mat2", "float2x2");
+
+	dstr_replace(&effect_text, "dFdx(", "ddx(");
+	dstr_replace(&effect_text, "dFdy(", "ddy(");
+	dstr_replace(&effect_text, "mix(", "lerp(");
+	dstr_replace(&effect_text, "fract(", "frac(");
 
 	convert_float_init(&effect_text, "float2(", 2);
 	convert_float_init(&effect_text, "float3(", 3);
 	convert_float_init(&effect_text, "float4(", 4);
+	convert_float_init(&effect_text, "mat2(", 4);
+	convert_float_init(&effect_text, "mat3(", 9);
+	convert_float_init(&effect_text, "mat4(", 16);
+
+	dstr_replace(&effect_text, "\nconst float", "\nuniform float");
 
 	convert_atan_single(&effect_text);
 	convert_mul(&effect_text);
+	convert_mat_mul(&effect_text, "mat2");
+	convert_mat_mul(&effect_text, "mat3");
+	convert_mat_mul(&effect_text, "mat4");
 
 	dstr_replace(&effect_text, "point(", "point2(");
 	dstr_replace(&effect_text, "line(", "line2(");
@@ -1445,15 +1822,10 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_cat(&insert_text, "#define mat3 float3x3\n");
 	if (dstr_find(&effect_text, "mat4"))
 		dstr_cat(&insert_text, "#define mat4 float4x4\n");
-	if (dstr_find(&effect_text, "fract("))
-		dstr_cat(&insert_text, "#define fract frac\n");
-	if (dstr_find(&effect_text, "mix("))
-		dstr_cat(&insert_text, "#define mix lerp\n");
+
 	if (dstr_find(&effect_text, "mod("))
-		dstr_cat(&insert_text, "float mod(float x, float y)\n\
-{\n\
-		return x - y * floor(x / y);\n\
-}\n");
+		dstr_cat(&insert_text,
+			 "#define mod(x,y) (x - y * floor(x / y))\n");
 	dstr_cat(&insert_text, "#endif\n");
 
 	if (dstr_find(&effect_text, "iMouse") &&
@@ -1475,28 +1847,30 @@ static bool shader_filter_convert(obs_properties_t *props,
 	struct dstr replacing = {0};
 	struct dstr replacement = {0};
 
-	char *texture_find = "texture(";
-	char *texture = strstr(effect_text.array, texture_find);
-	if (!texture) {
-		texture_find = "texture2D(";
-		texture = strstr(effect_text.array, texture_find);
+	char *texture_find[] = {"texture(", "texture2D(", "texelFetch("};
+	char *texture = NULL;
+	size_t texture_diff = 0;
+	for (size_t i = 0; i < 3; i++) {
+		char *t = strstr(effect_text.array, texture_find[i]);
+		if (t && (!texture || t < texture)) {
+			texture = t;
+			texture_diff = strlen(texture_find[i]);
+		}
 	}
-	if (!texture) {
-		texture_find = "texelFetch(";
-		texture = strstr(effect_text.array, texture_find);
-	}
-	size_t texture_diff = strlen(texture_find);
 	while (texture) {
 		const size_t diff = texture - effect_text.array;
 		if (is_var_char(*(texture - 1))) {
-			if (texture_diff == 10)
-				texture = strstr(effect_text.array + diff +
-							 texture_diff,
-						 "texture2D(");
-			else
-				texture = strstr(effect_text.array + diff +
-							 texture_diff,
-						 "texture(");
+			texture = NULL;
+			size_t prev_diff = texture_diff;
+			for (size_t i = 0; i < 3; i++) {
+				char *t = strstr(effect_text.array + diff +
+							 prev_diff,
+						 texture_find[i]);
+				if (t && (!texture || t < texture)) {
+					texture = t;
+					texture_diff = strlen(texture_find[i]);
+				}
+			}
 			continue;
 		}
 		char *start = texture + texture_diff;
@@ -1535,9 +1909,16 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_replace(&effect_text, replacing.array, "uv_size");
 
 		num_textures++;
-
-		texture = strstr(effect_text.array + diff + texture_diff,
-				 texture_find);
+		size_t prev_diff = texture_diff;
+		texture = NULL;
+		for (size_t i = 0; i < 3; i++) {
+			char *t = strstr(effect_text.array + diff + prev_diff,
+					 texture_find[i]);
+			if (t && (!texture || t < texture)) {
+				texture = t;
+				texture_diff = strlen(texture_find[i]);
+			}
+		}
 	}
 	dstr_free(&replacing);
 	dstr_free(&replacement);
