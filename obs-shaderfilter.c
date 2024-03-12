@@ -734,7 +734,8 @@ static bool shader_filter_text_changed(obs_properties_t *props,
 	const char *shader_text = obs_data_get_string(settings, "shader_text");
 	bool can_convert = strstr(shader_text, "void mainImage( out vec4") ||
 			   strstr(shader_text, "void mainImage(out vec4") ||
-			   strstr(shader_text, "void main()");
+			   strstr(shader_text, "void main()") ||
+			   strstr(shader_text, "vec4 effect(vec4");
 	obs_property_t *shader_convert =
 		obs_properties_get(props, "shader_convert");
 	bool visible =
@@ -1116,7 +1117,7 @@ static void convert_mat_mul(struct dstr *effect_text, char *var_type)
 	}
 }
 
-static void convert_float_init(struct dstr *effect_text, char *name, int count)
+static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 {
 	const size_t len = strlen(name);
 
@@ -1167,6 +1168,8 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 				} else if (*ch == '(' &&
 					   (strncmp(begin, "length(", 7) == 0 ||
 					    strncmp(begin, "float(", 6) == 0 ||
+					    strncmp(begin, "uint(", 5) == 0 ||
+					    strncmp(begin, "int(", 4) == 0 ||
 					    strncmp(begin, "asfloat(", 8) ==
 						    0 ||
 					    strncmp(begin, "asdouble(", 9) ==
@@ -1251,13 +1254,27 @@ static void convert_float_init(struct dstr *effect_text, char *name, int count)
 					depth++;
 				} else {
 					struct dstr find = {0};
-					dstr_init_copy(&find, "float ");
+					bool found = false;
+					dstr_copy(&find, "float ");
 					dstr_ncat(&find, begin,
 						  ch - begin +
 							  (*ch == '(' ? 1 : 0));
-					if (strstr(effect_text->array,
-						   find.array) == NULL) {
-
+					found = strstr(effect_text->array,
+						       find.array) != NULL;
+					if (!found) {
+						dstr_copy(&find, "int ");
+						dstr_ncat(
+							&find, begin,
+							ch - begin +
+								(*ch == '('
+									 ? 1
+									 : 0));
+						found = strstr(effect_text
+								       ->array,
+							       find.array) !=
+							NULL;
+					}
+					if (!found) {
 						only_float = false;
 					} else if (*ch == '(') {
 						function_depth = depth;
@@ -1584,6 +1601,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 
 	size_t start_diff = 24;
 	bool main_no_args = false;
+	int uv = 0;
 	char *main_pos = strstr(effect_text.array, "void mainImage(out vec4");
 	if (!main_pos) {
 		main_pos =
@@ -1596,12 +1614,17 @@ static bool shader_filter_convert(obs_properties_t *props,
 			main_no_args = true;
 	}
 	if (!main_pos) {
+		main_pos = strstr(effect_text.array, "vec4 effect(vec4");
+		start_diff = 17;
+		uv = 1;
+	}
+
+	if (!main_pos) {
 		dstr_free(&effect_text);
 		obs_data_release(settings);
 		return false;
 	}
 	size_t main_diff = main_pos - effect_text.array;
-	bool uv = false;
 	struct dstr return_color_name = {0};
 	struct dstr coord_name = {0};
 	if (main_no_args) {
@@ -1609,16 +1632,16 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_replace(&effect_text, "void main()",
 			     "float4 mainImage(VertData v_in) : TARGET");
 		if (strstr(effect_text.array, "varying vec2 position;")) {
-			uv = true;
+			uv = 1;
 			dstr_init_copy(&coord_name, "position");
 		} else if (strstr(effect_text.array, "varying vec2 pos;")) {
-			uv = true;
+			uv = 1;
 			dstr_init_copy(&coord_name, "pos");
 		} else if (strstr(effect_text.array, "fNormal")) {
-			uv = true;
+			uv = 2;
 			dstr_init_copy(&coord_name, "fNormal");
 		} else {
-			uv = false;
+			uv = 0;
 			dstr_init_copy(&coord_name, "gl_FragCoord");
 		}
 
@@ -1662,14 +1685,24 @@ static bool shader_filter_convert(obs_properties_t *props,
 		start++;
 		while (*start == ' ')
 			start++;
-		if (*start == 'i' && *(start + 1) == 'n' && *(start + 2) == ' ')
-			start += 3;
-		while (*start == ' ')
-			start++;
-		if (*start == 'v' && *(start + 1) == 'e' &&
-		    *(start + 2) == 'c' && *(start + 3) == '2' &&
-		    *(start + 4) == ' ')
-			start += 5;
+		char *v2i = strstr(start, "in vec2 ");
+		char *v2 = strstr(start, "vec2 ");
+		char *close = strstr(start, ")");
+		if (v2i && close && v2i < close) {
+			start = v2i + 8;
+		} else if (v2 && close && v2 < close) {
+			start = v2 + 5;
+		} else {
+			if (*start == 'i' && *(start + 1) == 'n' &&
+			    *(start + 2) == ' ')
+				start += 3;
+			while (*start == ' ')
+				start++;
+			if (*start == 'v' && *(start + 1) == 'e' &&
+			    *(start + 2) == 'c' && *(start + 3) == '2' &&
+			    *(start + 4) == ' ')
+				start += 5;
+		}
 		while (*start == ' ')
 			start++;
 
@@ -1727,7 +1760,9 @@ static bool shader_filter_convert(obs_properties_t *props,
 	dstr_replace(&effect_text, "varying vec3", "//varying vec3");
 	dstr_replace(&effect_text, "precision highp float;",
 		     "//precision highp float;");
-	if (uv) {
+	if (uv == 1) {
+		dstr_replace(&effect_text, "fragCoord", "v_in.uv");
+	} else if (uv == 2) {
 		dstr_replace(&effect_text, "fragCoord.xy", "v_in.uv");
 		dstr_replace(&effect_text, "fragCoord", "float3(v_in.uv,0.0)");
 	} else {
@@ -1751,6 +1786,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 		dstr_replace(&effect_text, "gl_FragCoord",
 			     "(v_in.uv * uv_size)");
 	}
+	dstr_replace(&effect_text, "love_ScreenSize", "uv_size");
 	dstr_replace(&effect_text, "u_resolution", "uv_size");
 	dstr_replace(&effect_text, "uResolution", "uv_size");
 	dstr_replace(&effect_text, "iResolution.xy", "uv_size");
@@ -1784,6 +1820,8 @@ static bool shader_filter_convert(obs_properties_t *props,
 	dstr_replace(&effect_text, "vec3", "float3");
 	dstr_replace(&effect_text, "vec2", "float2");
 
+	dstr_replace(&effect_text, " number ", " float ");
+
 	//dstr_replace(&effect_text, "mat4", "float4x4");
 	//dstr_replace(&effect_text, "mat3", "float3x3");
 	//dstr_replace(&effect_text, "mat2", "float2x2");
@@ -1793,14 +1831,21 @@ static bool shader_filter_convert(obs_properties_t *props,
 	dstr_replace(&effect_text, "mix(", "lerp(");
 	dstr_replace(&effect_text, "fract(", "frac(");
 
-	convert_float_init(&effect_text, "float2(", 2);
-	convert_float_init(&effect_text, "float3(", 3);
-	convert_float_init(&effect_text, "float4(", 4);
-	convert_float_init(&effect_text, "mat2(", 4);
-	convert_float_init(&effect_text, "mat3(", 9);
-	convert_float_init(&effect_text, "mat4(", 16);
+	convert_vector_init(&effect_text, "uint2(", 2);
+	convert_vector_init(&effect_text, "uint3(", 3);
+	convert_vector_init(&effect_text, "uint4(", 4);
+	convert_vector_init(&effect_text, "int2(", 2);
+	convert_vector_init(&effect_text, "int3(", 3);
+	convert_vector_init(&effect_text, "int4(", 4);
+	convert_vector_init(&effect_text, "float2(", 2);
+	convert_vector_init(&effect_text, "float3(", 3);
+	convert_vector_init(&effect_text, "float4(", 4);
+	convert_vector_init(&effect_text, "mat2(", 4);
+	convert_vector_init(&effect_text, "mat3(", 9);
+	convert_vector_init(&effect_text, "mat4(", 16);
 
 	dstr_replace(&effect_text, "\nconst float", "\nuniform float");
+	dstr_replace(&effect_text, "extern float", "uniform float");
 
 	convert_atan_single(&effect_text);
 	convert_mul(&effect_text);
@@ -1847,10 +1892,11 @@ static bool shader_filter_convert(obs_properties_t *props,
 	struct dstr replacing = {0};
 	struct dstr replacement = {0};
 
-	char *texture_find[] = {"texture(", "texture2D(", "texelFetch("};
+	char *texture_find[] = {"texture(", "texture2D(", "texelFetch(",
+				"Texel("};
 	char *texture = NULL;
 	size_t texture_diff = 0;
-	for (size_t i = 0; i < 3; i++) {
+	for (size_t i = 0; i < 4; i++) {
 		char *t = strstr(effect_text.array, texture_find[i]);
 		if (t && (!texture || t < texture)) {
 			texture = t;
@@ -1911,7 +1957,7 @@ static bool shader_filter_convert(obs_properties_t *props,
 		num_textures++;
 		size_t prev_diff = texture_diff;
 		texture = NULL;
-		for (size_t i = 0; i < 3; i++) {
+		for (size_t i = 0; i < 4; i++) {
 			char *t = strstr(effect_text.array + diff + prev_diff,
 					 texture_find[i]);
 			if (t && (!texture || t < texture)) {
