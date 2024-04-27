@@ -51,10 +51,6 @@ elseif(OS_MACOS)
 	target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 endif()
 
-# lines if you want add Qt UI in your plugin
-find_qt(COMPONENTS Widgets COMPONENTS_LINUX Gui)
-set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON)
-
 target_link_libraries(${PROJECT_NAME}
 		OBS::libobs)
 
