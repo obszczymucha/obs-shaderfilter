@@ -761,7 +761,7 @@ static void convert_mul(struct dstr *effect_text)
 		size_t diff = pos - effect_text->array;
 		char *end = pos;
 		end--;
-		while (*end == ' ' && end > effect_text->array)
+		while ((*end == ' ' || *end == '\t') && end > effect_text->array)
 			end--;
 		char *start = end;
 		while ((is_var_char(*start) || *start == '.') && start > effect_text->array)
@@ -791,11 +791,11 @@ static void insert_begin_of_block(struct dstr *effect_text, size_t diff, char *i
 {
 	int depth = 0;
 	char *ch = effect_text->array + diff;
-	while (ch > effect_text->array && *ch == ' ')
+	while (ch > effect_text->array && (*ch == ' ' || *ch == '\t'))
 		ch--;
 	while (ch > effect_text->array) {
 		while (*ch != '=' && *ch != '(' && *ch != ')' && *ch != '+' && *ch != '-' && *ch != '/' && *ch != '*' &&
-		       *ch != ' ' && ch > effect_text->array)
+		       *ch != ' ' && *ch != '\t' && ch > effect_text->array)
 			ch--;
 		if (*ch == '(') {
 			if (depth == 0) {
@@ -810,7 +810,7 @@ static void insert_begin_of_block(struct dstr *effect_text, size_t diff, char *i
 		} else if (*ch == '=') {
 			dstr_insert(effect_text, ch - effect_text->array + 1, insert);
 			return;
-		} else if (*ch == '+' || *ch == '-' || *ch == '/' || *ch == '*' || *ch == ' ') {
+		} else if (*ch == '+' || *ch == '-' || *ch == '/' || *ch == '*' || *ch == ' ' || *ch == '\t') {
 			if (depth == 0) {
 				dstr_insert(effect_text, ch - effect_text->array + 1, insert);
 				return;
@@ -824,11 +824,11 @@ static void insert_end_of_block(struct dstr *effect_text, size_t diff, char *ins
 {
 	int depth = 0;
 	char *ch = effect_text->array + diff;
-	while (*ch == ' ')
+	while (*ch == ' ' || *ch == '\t')
 		ch++;
 	while (*ch != 0) {
 		while (*ch != ';' && *ch != '(' && *ch != ')' && *ch != '+' && *ch != '-' && *ch != '/' && *ch != '*' &&
-		       *ch != ' ' && *ch != 0)
+		       *ch != ' ' && *ch != '\t' && *ch != 0)
 			ch++;
 		if (*ch == '(') {
 			ch++;
@@ -843,7 +843,7 @@ static void insert_end_of_block(struct dstr *effect_text, size_t diff, char *ins
 		} else if (*ch == ';') {
 			dstr_insert(effect_text, ch - effect_text->array, insert);
 			return;
-		} else if (*ch == '+' || *ch == '-' || *ch == '/' || *ch == '*' || *ch == ' ') {
+		} else if (*ch == '+' || *ch == '-' || *ch == '/' || *ch == '*' || *ch == ' ' || *ch == '\t') {
 			if (depth == 0) {
 				dstr_insert(effect_text, ch - effect_text->array, insert);
 				return;
@@ -863,7 +863,7 @@ static void convert_mat_mul_var(struct dstr *effect_text, struct dstr *var_funct
 		}
 		size_t diff = pos - effect_text->array;
 		char *ch = pos + var_function_name->len;
-		while (*ch == ' ')
+		while (*ch == ' ' || *ch == '\t')
 			ch++;
 		if (*ch == '*') {
 			size_t diff3 = ch - effect_text->array + 1;
@@ -874,7 +874,7 @@ static void convert_mat_mul_var(struct dstr *effect_text, struct dstr *var_funct
 			continue;
 		}
 		ch = pos - 1;
-		while (*ch == ' ')
+		while ((*ch == ' ' || *ch == '\t') && ch > effect_text->array)
 			ch--;
 		if (*ch == '*') {
 			size_t diff2 = ch - effect_text->array - 1;
@@ -903,7 +903,7 @@ static void convert_mat_mul(struct dstr *effect_text, char *var_type)
 		char *begin = pos + len;
 		if (*begin == '(') {
 			char *ch = pos - 1;
-			while (*ch == ' ')
+			while ((*ch == ' ' || *ch == '\t') && ch > effect_text->array)
 				ch--;
 			if (*ch == '*') {
 				// mat constructor with * in front of it
@@ -949,11 +949,11 @@ static void convert_mat_mul(struct dstr *effect_text, char *var_type)
 				}
 			}
 		}
-		if (*begin != ' ') {
+		if (*begin != ' ' && *begin != '\t') {
 			pos = strstr(pos + len, var_type);
 			continue;
 		}
-		while (*begin == ' ')
+		while (*begin == ' ' || *begin == '\t')
 			begin++;
 		if (!is_var_char(*begin)) {
 			pos = strstr(pos + len, var_type);
@@ -1069,7 +1069,7 @@ static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 						if (*ch == '(') {
 							found = true;
 							break;
-						}else if (!is_var_char(*t)) {
+						} else if (!is_var_char(*t)) {
 							found = true;
 							break;
 						}
@@ -1116,8 +1116,8 @@ static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 					dstr_free(&find);
 					ch--;
 				}
-			} else if ((*ch < '0' || *ch > '9') && *ch != '.' && *ch != ' ' && *ch != '+' && *ch != '-' && *ch != '*' &&
-				   *ch != '/') {
+			} else if ((*ch < '0' || *ch > '9') && *ch != '.' && *ch != ' ' && *ch != '\t' && *ch != '+' &&
+				   *ch != '-' && *ch != '*' && *ch != '/') {
 				only_numbers = false;
 			}
 			ch++;
@@ -1213,10 +1213,10 @@ static void convert_define(struct dstr *effect_text)
 	while (pos) {
 		size_t diff = pos - effect_text->array;
 		char *start = pos + 8;
-		while (*start == ' ')
+		while (*start == ' ' || *start == '\t')
 			start++;
 		char *end = start;
-		while (*end != ' ' && *end != '\n' && *end != 0)
+		while (*end != ' ' && *end != '\t' && *end != '\n' && *end != 0)
 			end++;
 		char *t = strstr(start, "(");
 		if (t && t < end) {
@@ -1229,7 +1229,7 @@ static void convert_define(struct dstr *effect_text)
 		dstr_ncat(&def_name, start, end - start);
 
 		start = end;
-		while (*start == ' ')
+		while (*start == ' ' || *start == '\t')
 			start++;
 
 		end = start;
@@ -1270,7 +1270,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name, size
 			while (is_var_char(*ch))
 				ch++;
 		}
-		while (*ch == ' ')
+		while (*ch == ' ' || *ch == '\t')
 			ch++;
 
 		if (*ch == '=' || (*(ch + 1) == '=' && (*ch == '*' || *ch == '/' || *ch == '+' || *ch == '-'))) {
@@ -1296,7 +1296,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name, size
 					ch++;
 			}
 
-			while (*ch == ' ')
+			while (*ch == ' ' || *ch == '\t')
 				ch++;
 
 			if (*ch == '=') {
@@ -1338,7 +1338,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name, size
 			while (is_var_char(*ch))
 				ch++;
 		}
-		while (*ch == ' ')
+		while (*ch == ' ' || *ch == '\t')
 			ch++;
 
 		if (*ch == '=') {
@@ -1450,13 +1450,14 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 		char *out_start = strstr(effect_text.array, "out vec4");
 		if (out_start) {
 			char *start = out_start + 9;
-			while (*start == ' ')
+			while (*start == ' ' || *start == '\t')
 				start++;
 			char *end = start;
-			while (*end != ' ' && *end != ',' && *end != '(' && *end != ')' && *end != ';' && *end != 0)
+			while (*end != ' ' && *end != '\t' && *end != '\n' && *end != ',' && *end != '(' && *end != ')' &&
+			       *end != ';' && *end != 0)
 				end++;
 			dstr_ncat(&return_color_name, start, end - start);
-			while (*end == ' ')
+			while (*end == ' ' || *end == '\t')
 				end++;
 			if (*end == ';')
 				dstr_remove(&effect_text, out_start - effect_text.array, (end + 1) - out_start);
@@ -1466,10 +1467,10 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	} else {
 
 		char *start = main_pos + start_diff;
-		while (*start == ' ')
+		while (*start == ' ' || *start == '\t')
 			start++;
 		char *end = start;
-		while (*end != ' ' && *end != ',' && *end != ')' && *end != 0)
+		while (*end != ' ' && *end != '\t' && *end != '\n' && *end != ',' && *end != ')' && *end != 0)
 			end++;
 
 		dstr_ncat(&return_color_name, start, end - start);
@@ -1482,7 +1483,7 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 			return false;
 		}
 		start++;
-		while (*start == ' ')
+		while (*start == ' ' || *start == '\t')
 			start++;
 		char *v2i = strstr(start, "in vec2 ");
 		char *v2 = strstr(start, "vec2 ");
@@ -1492,19 +1493,19 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 		} else if (v2 && close && v2 < close) {
 			start = v2 + 5;
 		} else {
-			if (*start == 'i' && *(start + 1) == 'n' && *(start + 2) == ' ')
+			if (*start == 'i' && *(start + 1) == 'n' && (*(start + 2) == ' ' || *(start + 2) == '\t'))
 				start += 3;
-			while (*start == ' ')
+			while (*start == ' ' || *start == '\t')
 				start++;
 			if (*start == 'v' && *(start + 1) == 'e' && *(start + 2) == 'c' && *(start + 3) == '2' &&
-			    *(start + 4) == ' ')
+			    (*(start + 4) == ' ' || *(start + 4) == '\t'))
 				start += 5;
 		}
-		while (*start == ' ')
+		while (*start == ' ' || *start == '\t')
 			start++;
 
 		end = start;
-		while (*end != ' ' && *end != ',' && *end != ')' && *end != 0)
+		while (*end != ' ' && *end != '\t' && *end != '\n' && *end != ',' && *end != ')' && *end != 0)
 			end++;
 
 		dstr_ncat(&coord_name, start, end - start);
@@ -1696,10 +1697,10 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 			continue;
 		}
 		char *start = texture + texture_diff;
-		while (*start == ' ')
+		while (*start == ' ' || *start == '\t')
 			start++;
 		char *end = start;
-		while (*end != ' ' && *end != ',' && *end != ')' && *end != '\n' && *end != 0)
+		while (*end != ' ' && *end != '\t' && *end != ',' && *end != ')' && *end != '\n' && *end != 0)
 			end++;
 		dstr_copy(&texture_name, "");
 		dstr_ncat(&texture_name, start, end - start);
