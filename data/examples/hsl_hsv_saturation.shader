@@ -33,11 +33,15 @@ uniform float hsvGamma<
     float step = 0.01;
 > = 1.0;
 
-uniform float adjustmentOrder<
+uniform int adjustmentOrder<
     string label = "Order";
-    float minimum = 1;
-    float maximum = 3;
-    float step = 1;
+    string widget_type = "select";
+    int    option_0_value = 1;
+    string option_0_label = "Parallel adjustment (both HSL and HSV operate on the original image and then blend)";
+    int    option_1_value = 2;
+    string option_1_label = "HSL first, then HSV";
+    int    option_2_value = 3;
+    string option_2_label = "HSV first, then HSL";
 > = 1;
 
 // HSV conversion
@@ -108,7 +112,7 @@ float3 hsl2rgb(float3 c) {
 }
 
 float3 adjustColorWithOrder(float3 originalColor) {
-    if (adjustmentOrder == 1.0) {
+    if (adjustmentOrder == 1) {
         // Parallel adjustment (both HSL and HSV operate on the original image and then blend)
         float3 hslAdjusted = rgb2hsl(originalColor);
         hslAdjusted.y = pow(hslAdjusted.y, (1/hslGamma));
@@ -123,7 +127,7 @@ float3 adjustColorWithOrder(float3 originalColor) {
         float3 finalColor = (hslAdjustedColor + hsvAdjustedColor) * 0.5;
         return finalColor;
     } 
-    else if (adjustmentOrder == 2.0) {
+    else if (adjustmentOrder == 2) {
         // HSL first, then HSV
         float3 hslAdjusted = rgb2hsl(originalColor);
         hslAdjusted.y = pow(hslAdjusted.y, (1/hslGamma));
@@ -134,7 +138,7 @@ float3 adjustColorWithOrder(float3 originalColor) {
         hsvAdjusted.y *= hsvSaturationFactor;
         return hsv2rgb(hsvAdjusted);
     } 
-    else if (adjustmentOrder == 3.0) {
+    else if (adjustmentOrder == 3) {
         // HSV first, then HSL
         float3 hsvAdjusted = rgb2hsv(originalColor);
         hsvAdjusted.y = pow(hsvAdjusted.y, (1/hsvGamma));
