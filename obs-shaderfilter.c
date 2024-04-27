@@ -711,14 +711,24 @@ static bool add_source_to_list(void *data, obs_source_t *source)
 	return true;
 }
 
-static void convert_atan_single(struct dstr *effect_text)
+static bool is_var_char(char ch)
+{
+	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
+}
+
+static void convert_atan(struct dstr *effect_text)
 {
 	char *pos = strstr(effect_text->array, "atan(");
 	while (pos) {
+		if (is_var_char(*(pos - 1))) {
+			pos = strstr(pos + 5, "atan(");
+			continue;
+		}
 		size_t diff = pos - effect_text->array;
 		char *comma = strstr(pos + 5, ",");
-		if (!comma)
-			break;
+		char *divide = strstr(pos + 5, "/");
+		if (!comma && !divide)
+			return;
 
 		int depth = 0;
 		char *open = strstr(pos + 5, "(");
@@ -732,58 +742,30 @@ static void convert_atan_single(struct dstr *effect_text)
 			}
 			while (depth > 0 && close && (!open || close < open)) {
 				depth--;
-				if (depth == 0 && (!comma || comma < close)) {
+				if (depth == 0 && (!comma || comma < close))
 					comma = strstr(close + 1, ",");
-				} else if (comma && open && comma > open && comma < close) {
+				if (depth == 0 && (!divide || divide < close))
+					divide = strstr(close + 1, "/");
+				if (comma && open && comma > open && comma < close)
 					comma = NULL;
-				}
+				if (divide && open && divide > open && divide < close)
+					divide = NULL;
+				
 				open = strstr(close + 1, "(");
 				close = strstr(close + 1, ")");
 			}
 		} while (depth > 0 && close);
 
-		if (close && comma && comma < close && (!open || comma < open))
-			*comma = '/';
+		if (close && comma && comma < close && (!open || comma < open)) {
+			//*comma = '/';
+			dstr_insert(effect_text, diff + 4, "2");
+		}
+		if (close && divide && divide < close && (!open || divide < open)) {
+			*divide = ',';
+			dstr_insert(effect_text, diff + 4, "2");
+		}
 
 		pos = strstr(effect_text->array + diff + 5, "atan(");
-	}
-}
-
-static bool is_var_char(char ch)
-{
-	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
-}
-
-static void convert_mul(struct dstr *effect_text)
-{
-	char *pos = strstr(effect_text->array, "*=");
-	while (pos) {
-		size_t diff = pos - effect_text->array;
-		char *end = pos;
-		end--;
-		while ((*end == ' ' || *end == '\t') && end > effect_text->array)
-			end--;
-		char *start = end;
-		while ((is_var_char(*start) || *start == '.') && start > effect_text->array)
-			start--;
-		start++;
-		end++;
-
-		struct dstr insert = {0};
-		dstr_init_copy(&insert, " mul(");
-		dstr_ncat(&insert, start, end - start);
-		dstr_cat(&insert, ",");
-		dstr_remove(effect_text, diff, 1);
-		dstr_insert(effect_text, diff + 1, insert.array);
-		dstr_free(&insert);
-
-		char *line_end = effect_text->array + diff;
-		while (*line_end != ';' && *line_end != 0)
-			line_end++;
-
-		dstr_insert(effect_text, line_end - effect_text->array, ")");
-
-		pos = strstr(effect_text->array + diff + 2, "*=");
 	}
 }
 
@@ -828,7 +810,7 @@ static void insert_end_of_block(struct dstr *effect_text, size_t diff, char *ins
 		ch++;
 	while (*ch != 0) {
 		while (*ch != ';' && *ch != '(' && *ch != ')' && *ch != '+' && *ch != '-' && *ch != '/' && *ch != '*' &&
-		       *ch != ' ' && *ch != '\t' && *ch != 0)
+		       *ch != ' ' && *ch != '\t' && *ch != ',' && *ch != 0)
 			ch++;
 		if (*ch == '(') {
 			ch++;
@@ -843,7 +825,7 @@ static void insert_end_of_block(struct dstr *effect_text, size_t diff, char *ins
 		} else if (*ch == ';') {
 			dstr_insert(effect_text, ch - effect_text->array, insert);
 			return;
-		} else if (*ch == '+' || *ch == '-' || *ch == '/' || *ch == '*' || *ch == ' ' || *ch == '\t') {
+		} else if (*ch == '+' || *ch == '-' || *ch == '/' || *ch == '*' || *ch == ' ' || *ch == '\t' || *ch == ',') {
 			if (depth == 0) {
 				dstr_insert(effect_text, ch - effect_text->array, insert);
 				return;
@@ -865,7 +847,7 @@ static void convert_mat_mul_var(struct dstr *effect_text, struct dstr *var_funct
 		char *ch = pos + var_function_name->len;
 		while (*ch == ' ' || *ch == '\t')
 			ch++;
-		if (*ch == '*') {
+		if (*ch == '*' && *(ch + 1) != '=') {
 			size_t diff3 = ch - effect_text->array + 1;
 			*ch = ',';
 			insert_end_of_block(effect_text, diff3, ")");
@@ -876,7 +858,36 @@ static void convert_mat_mul_var(struct dstr *effect_text, struct dstr *var_funct
 		ch = pos - 1;
 		while ((*ch == ' ' || *ch == '\t') && ch > effect_text->array)
 			ch--;
-		if (*ch == '*') {
+		if (*ch == '=' && *(ch - 1) == '*') {
+			char *end = ch - 2;
+			while ((*end == ' ' || *end == '\t') && end > effect_text->array)
+				end--;
+			char *start = end;
+			while ((is_var_char(*start) || *start == '.') && start > effect_text->array)
+				start--;
+			start++;
+			end++;
+
+			diff = ch - 1 - effect_text->array;
+
+			struct dstr insert = {0};
+			dstr_init_copy(&insert, "= mul(");
+			dstr_ncat(&insert, start, end - start);
+			dstr_cat(&insert, ",");
+			dstr_remove(effect_text, diff, 2);
+			dstr_insert(effect_text, diff, insert.array);
+
+			char *line_end = effect_text->array + diff;
+			while (*line_end != ';' && *line_end != 0)
+				line_end++;
+
+			dstr_insert(effect_text, line_end - effect_text->array, ")");
+
+			pos = strstr(effect_text->array + diff + insert.len + 1 + var_function_name->len, var_function_name->array);
+			dstr_free(&insert);
+
+			continue;
+		} else if (*ch == '*') {
 			size_t diff2 = ch - effect_text->array - 1;
 			*ch = ',';
 			insert_end_of_block(effect_text, diff + var_function_name->len, ")");
@@ -905,7 +916,37 @@ static void convert_mat_mul(struct dstr *effect_text, char *var_type)
 			char *ch = pos - 1;
 			while ((*ch == ' ' || *ch == '\t') && ch > effect_text->array)
 				ch--;
-			if (*ch == '*') {
+			if (*ch == '=' && *(ch - 1) == '*') {
+				// mat constructor with *= in front of it
+				char *end = ch - 2;
+				while ((*end == ' ' || *end == '\t') && end > effect_text->array)
+					end--;
+				char *start = end;
+				while ((is_var_char(*start) || *start == '.') && start > effect_text->array)
+					start--;
+				start++;
+				end++;
+
+				size_t diff2 = ch - effect_text->array - 1;
+
+				struct dstr insert = {0};
+				dstr_init_copy(&insert, "= mul(");
+				dstr_ncat(&insert, start, end - start);
+				dstr_cat(&insert, ",");
+				dstr_remove(effect_text, diff2, 2);
+				dstr_insert(effect_text, diff2, insert.array);
+
+				char *line_end = effect_text->array + diff2;
+				while (*line_end != ';' && *line_end != 0)
+					line_end++;
+
+				dstr_insert(effect_text, line_end - effect_text->array, ")");
+
+				pos = strstr(effect_text->array + diff + insert.len + len + 1, var_type);
+				dstr_free(&insert);
+
+				continue;
+			} else if (*ch == '*') {
 				// mat constructor with * in front of it
 				size_t diff2 = ch - effect_text->array - 1;
 				*ch = ',';
@@ -1259,7 +1300,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name, size
 	size_t count = 0;
 	char *pos = strstr(effect_text->array + main_diff, var_name->array);
 	while (pos) {
-		if (is_var_char(*(pos - 1))) {
+		if (is_var_char(*(pos - 1)) || (*(pos - 1) == '/' && *(pos - 2) == '/')) {
 			pos = strstr(pos + var_name->len, var_name->array);
 			continue;
 		}
@@ -1284,7 +1325,7 @@ static void convert_return(struct dstr *effect_text, struct dstr *var_name, size
 	if (count == 1) {
 		pos = strstr(effect_text->array + main_diff, var_name->array);
 		while (pos) {
-			if (is_var_char(*(pos - 1))) {
+			if (is_var_char(*(pos - 1)) || (*(pos - 1) == '/' && *(pos - 2) == '/')) {
 				pos = strstr(pos + var_name->len, var_name->array);
 				continue;
 			}
@@ -1567,6 +1608,7 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "love_ScreenSize", "uv_size");
 	dstr_replace(&effect_text, "u_resolution", "uv_size");
 	dstr_replace(&effect_text, "uResolution", "uv_size");
+	dstr_replace(&effect_text, "iResolution.xyz", "float3(uv_size,0.0)");
 	dstr_replace(&effect_text, "iResolution.xy", "uv_size");
 	dstr_replace(&effect_text, "iResolution.x", "uv_size.x");
 	dstr_replace(&effect_text, "iResolution.y", "uv_size.y");
@@ -1612,6 +1654,9 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "mix(", "lerp(");
 	dstr_replace(&effect_text, "fract(", "frac(");
 
+	convert_vector_init(&effect_text, "bool2(", 2);
+	convert_vector_init(&effect_text, "bool3(", 3);
+	convert_vector_init(&effect_text, "bool4(", 4);
 	convert_vector_init(&effect_text, "uint2(", 2);
 	convert_vector_init(&effect_text, "uint3(", 3);
 	convert_vector_init(&effect_text, "uint4(", 4);
@@ -1628,8 +1673,7 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "\nconst float", "\nuniform float");
 	dstr_replace(&effect_text, "extern float", "uniform float");
 
-	convert_atan_single(&effect_text);
-	convert_mul(&effect_text);
+	convert_atan(&effect_text);
 	convert_mat_mul(&effect_text, "mat2");
 	convert_mat_mul(&effect_text, "mat3");
 	convert_mat_mul(&effect_text, "mat4");
@@ -1638,6 +1682,10 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "line(", "line2(");
 
 	dstr_replace(&effect_text, "#version ", "//#version ");
+
+	dstr_replace(&effect_text, "acos(-1.0)", "3.14159265359");
+	dstr_replace(&effect_text, "acos(-1.)", "3.14159265359");
+	dstr_replace(&effect_text, "acos(-1)", "3.14159265359");
 
 	struct dstr insert_text = {0};
 	dstr_init_copy(&insert_text, "#ifndef OPENGL\n");
