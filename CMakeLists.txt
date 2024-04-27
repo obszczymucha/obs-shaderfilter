@@ -9,7 +9,7 @@ else()
   cmake_minimum_required(VERSION 3.18)
 endif()
 
-project(obs-shaderfilter VERSION 2.3.1)
+project(obs-shaderfilter VERSION 2.3.2)
 set(PROJECT_FULL_NAME "OBS Shaderfilter")
 
 # Set new UUIDs when you start to create a new plugin.
