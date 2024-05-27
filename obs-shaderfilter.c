@@ -716,6 +716,22 @@ static bool is_var_char(char ch)
 	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
 }
 
+static void convert_if_defined(struct dstr *effect_text)
+{
+	char *pos = strstr(effect_text->array, "#if defined(");
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+		char *ch = strstr(effect_text->array + diff + 12, ")\n");
+		pos = strstr(effect_text->array + diff + 12, "#if defined(");
+		if (ch && (!pos || ch < pos)) {
+			*ch = ' ';
+			dstr_remove(effect_text, diff, 12);
+			dstr_insert(effect_text, diff, "#ifdef ");
+			pos = strstr(effect_text->array + diff + 5, "#if defined(");
+		}
+	}
+}
+
 static void convert_atan(struct dstr *effect_text)
 {
 	char *pos = strstr(effect_text->array, "atan(");
@@ -750,7 +766,7 @@ static void convert_atan(struct dstr *effect_text)
 					comma = NULL;
 				if (divide && open && divide > open && divide < close)
 					divide = NULL;
-				
+
 				open = strstr(close + 1, "(");
 				close = strstr(close + 1, ")");
 			}
@@ -1013,6 +1029,64 @@ static void convert_mat_mul(struct dstr *effect_text, char *var_type)
 	}
 }
 
+static bool is_in_function(struct dstr *effect_text, size_t diff)
+{
+	char *pos = effect_text->array + diff;
+	int depth = 0;
+	while (depth >= 0) {
+		char *end = strstr(pos, "}");
+		char *begin = strstr(pos, "{");
+		if (end && begin && begin < end) {
+			pos = begin + 1;
+			depth++;
+		} else if (end && begin && end < begin) {
+			pos = end + 1;
+			depth--;
+		} else if (end) {
+			pos = end + 1;
+			depth--;
+		} else if (begin && depth == 0) {
+			break;
+		} else if (begin) {
+			pos = begin + 1;
+			depth++;
+		} else {
+			break;
+		}
+	}
+	return depth != 0;
+}
+
+static void convert_init(struct dstr *effect_text, char *name)
+{
+	const size_t len = strlen(name);
+
+	char *pos = strstr(effect_text->array, name);
+	while (pos) {
+		size_t diff = pos - effect_text->array;
+
+		if (!is_in_function(effect_text, diff)) {
+			char *ch = pos + len;
+			while (*ch != 0 && (*ch == ' ' || *ch == '\t'))
+				ch++;
+			while (is_var_char(*ch))
+				ch++;
+			while (*ch != 0 && (*ch == ' ' || *ch == '\t'))
+				ch++;
+			if (*ch == '=' && *(ch + 1) != '=') {
+				char *begin = pos - 1;
+				while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
+					begin--;
+				if (memcmp("uniform", begin - 6, 7) != 0 && memcmp("const", begin - 4, 5) != 0) {
+					dstr_insert(effect_text, begin - effect_text->array + 1, "uniform ");
+					diff += 8;
+				}
+			}
+		}
+		pos = strstr(effect_text->array + diff + len, name);
+	}
+}
+
 static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 {
 	const size_t len = strlen(name);
@@ -1023,7 +1097,7 @@ static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 		char *ch = pos + len;
 		int depth = 0;
 		int function_depth = -1;
-		bool only_one = false;
+		bool only_one = true;
 		bool only_numbers = true;
 		bool only_float = true;
 		while (*ch != 0 && (only_numbers || only_float)) {
@@ -1031,7 +1105,6 @@ static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 				depth++;
 			} else if (*ch == ')') {
 				if (depth == 0) {
-					only_one = true;
 					break;
 				}
 				depth--;
@@ -1041,7 +1114,6 @@ static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 			} else if (*ch == ',') {
 				if (depth == 0) {
 					only_one = false;
-					break;
 				}
 			} else if (*ch == ';') {
 				only_one = false;
@@ -1163,29 +1235,65 @@ static void convert_vector_init(struct dstr *effect_text, char *name, int count)
 			}
 			ch++;
 		}
-		if (!only_one || (!only_numbers && !only_float)) {
-			pos = strstr(effect_text->array + diff + len, name);
-			continue;
-		}
+		size_t end_diff = ch - effect_text->array;
+		if (count > 1 && only_one && (only_numbers || only_float)) {
+			//only 1 simple arg in the float4
+			struct dstr found = {0};
+			dstr_init(&found);
+			dstr_ncat(&found, pos, ch - pos + 1);
 
-		//only 1 simple arg in the float4
-		struct dstr found = {0};
-		dstr_init(&found);
-		dstr_ncat(&found, pos, ch - pos + 1);
-
-		struct dstr replacement = {0};
-		dstr_init_copy(&replacement, name);
-		dstr_ncat(&replacement, pos + len, ch - (pos + len));
-		for (int i = 1; i < count; i++) {
-			dstr_cat(&replacement, ",");
+			struct dstr replacement = {0};
+			dstr_init_copy(&replacement, name);
 			dstr_ncat(&replacement, pos + len, ch - (pos + len));
+			for (int i = 1; i < count; i++) {
+				dstr_cat(&replacement, ",");
+				dstr_ncat(&replacement, pos + len, ch - (pos + len));
+			}
+			dstr_cat(&replacement, ")");
+
+			dstr_replace(effect_text, found.array, replacement.array);
+
+			end_diff -= found.len;
+			end_diff += replacement.len;
+			dstr_free(&replacement);
+			dstr_free(&found);
 		}
-		dstr_cat(&replacement, ")");
 
-		dstr_replace(effect_text, found.array, replacement.array);
+		if (!is_in_function(effect_text, diff)) {
+			char *begin = effect_text->array + diff - 1;
+			while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
+				begin--;
+			if (*begin == '=') {
+				begin--;
+				while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
+					begin--;
+				while (is_var_char(*begin))
+					begin--;
+				while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
+					begin--;
+				if (memcmp(name, begin - len + 2, len - 1) == 0) {
 
-		dstr_free(&replacement);
-		dstr_free(&found);
+					begin -= len - 1;
+					while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
+						begin--;
+					if (memcmp("uniform", begin - 6, 7) != 0 && memcmp("const", begin - 4, 5) != 0) {
+						dstr_insert(effect_text, begin - effect_text->array + 1, "uniform ");
+						diff += 8;
+						end_diff += 8;
+					}
+					if (effect_text->array[end_diff] == ')') {
+						if (count > 1) {
+							effect_text->array[end_diff] = '}';
+							dstr_remove(effect_text, diff, len);
+							dstr_insert(effect_text, diff, "{");
+						} else {
+							dstr_remove(effect_text, end_diff, 1);
+							dstr_remove(effect_text, diff, len);
+						}
+					}
+				}
+			}
+		}
 
 		pos = strstr(effect_text->array + diff + len, name);
 	}
@@ -1442,7 +1550,7 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	struct dstr effect_text = {0};
 	dstr_init_copy(&effect_text, obs_data_get_string(settings, "shader_text"));
 
-	convert_define(&effect_text);
+	//convert_define(&effect_text);
 
 	size_t start_diff = 24;
 	bool main_no_args = false;
@@ -1654,24 +1762,35 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "mix(", "lerp(");
 	dstr_replace(&effect_text, "fract(", "frac(");
 
+	dstr_replace(&effect_text, "extern bool", "uniform bool");
+	dstr_replace(&effect_text, "extern uint", "uniform uint");
+	dstr_replace(&effect_text, "extern int", "uniform int");
+	dstr_replace(&effect_text, "extern float", "uniform float");
+
+	convert_init(&effect_text, "bool");
+	convert_init(&effect_text, "uint");
+	convert_init(&effect_text, "int");
+	convert_init(&effect_text, "float");
+
+	convert_vector_init(&effect_text, "bool(", 1);
 	convert_vector_init(&effect_text, "bool2(", 2);
 	convert_vector_init(&effect_text, "bool3(", 3);
 	convert_vector_init(&effect_text, "bool4(", 4);
+	convert_vector_init(&effect_text, "uint(", 1);
 	convert_vector_init(&effect_text, "uint2(", 2);
 	convert_vector_init(&effect_text, "uint3(", 3);
 	convert_vector_init(&effect_text, "uint4(", 4);
+	convert_vector_init(&effect_text, "int(", 1);
 	convert_vector_init(&effect_text, "int2(", 2);
 	convert_vector_init(&effect_text, "int3(", 3);
 	convert_vector_init(&effect_text, "int4(", 4);
+	convert_vector_init(&effect_text, "float(", 1);
 	convert_vector_init(&effect_text, "float2(", 2);
 	convert_vector_init(&effect_text, "float3(", 3);
 	convert_vector_init(&effect_text, "float4(", 4);
 	convert_vector_init(&effect_text, "mat2(", 4);
 	convert_vector_init(&effect_text, "mat3(", 9);
 	convert_vector_init(&effect_text, "mat4(", 16);
-
-	dstr_replace(&effect_text, "\nconst float", "\nuniform float");
-	dstr_replace(&effect_text, "extern float", "uniform float");
 
 	convert_atan(&effect_text);
 	convert_mat_mul(&effect_text, "mat2");
@@ -1682,6 +1801,8 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "line(", "line2(");
 
 	dstr_replace(&effect_text, "#version ", "//#version ");
+
+	convert_if_defined(&effect_text);
 
 	dstr_replace(&effect_text, "acos(-1.0)", "3.14159265359");
 	dstr_replace(&effect_text, "acos(-1.)", "3.14159265359");
