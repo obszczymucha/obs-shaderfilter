@@ -1045,7 +1045,7 @@ static bool is_in_function(struct dstr *effect_text, size_t diff)
 		} else if (end) {
 			pos = end + 1;
 			depth--;
-		} else if (begin && depth == 0) {
+		} else if (begin && depth < 0) {
 			break;
 		} else if (begin) {
 			pos = begin + 1;
@@ -1060,23 +1060,63 @@ static bool is_in_function(struct dstr *effect_text, size_t diff)
 static void convert_init(struct dstr *effect_text, char *name)
 {
 	const size_t len = strlen(name);
-
+	char extra = 0;
 	char *pos = strstr(effect_text->array, name);
 	while (pos) {
 		size_t diff = pos - effect_text->array;
-
+		if (pos > effect_text->array && is_var_char(*(pos - 1))) {
+			pos = strstr(effect_text->array + diff + len, name);
+			continue;
+		}
+		char *ch = pos + len;
+		if (*ch >= '2' && *ch <= '9') {
+			extra = *ch;
+			ch++;
+		} else {
+			extra = 0;
+		}
+		if (*ch != ' ' && *ch != '\t') {
+			pos = strstr(effect_text->array + diff + len, name);
+			continue;
+		}
+		char *begin = pos - 1;
+		while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
+			begin--;
+		if (*begin == '(' || *begin == ',' ||
+		    (is_var_char(*begin) && memcmp("uniform", begin - 6, 7) != 0 && memcmp("const", begin - 4, 5) != 0)) {
+			pos = strstr(effect_text->array + diff + len, name);
+			continue;
+		}
 		if (!is_in_function(effect_text, diff)) {
-			char *ch = pos + len;
-			while (*ch != 0 && (*ch == ' ' || *ch == '\t'))
-				ch++;
-			while (is_var_char(*ch))
-				ch++;
-			while (*ch != 0 && (*ch == ' ' || *ch == '\t'))
-				ch++;
-			if (*ch == '=' && *(ch + 1) != '=') {
-				char *begin = pos - 1;
-				while (begin > effect_text->array && (*begin == ' ' || *begin == '\t'))
-					begin--;
+			while (true) {
+				while (*ch != 0 && (*ch == ' ' || *ch == '\t'))
+					ch++;
+				while (is_var_char(*ch))
+					ch++;
+				while (*ch != 0 && (*ch == ' ' || *ch == '\t'))
+					ch++;
+				if (*ch != ',')
+					break;
+				*ch = ';';
+				diff = ch - effect_text->array;
+				dstr_insert(effect_text, diff + 1, " ");
+				if (extra) {
+					dstr_insert_ch(effect_text, diff + 1, extra);
+				}
+				dstr_insert(effect_text, diff + 1, name);
+				if (memcmp("const", begin - 4, 5) == 0) {
+					dstr_insert(effect_text, diff + 1, "\nconst ");
+					diff += 9;
+				} else {
+					dstr_insert(effect_text, diff + 1, "\nuniform ");
+					diff += 11;
+				}
+				if (extra)
+					diff++;
+				ch = effect_text->array + diff + len;
+			}
+
+			if ((*ch == '=' && *(ch + 1) != '=') || *ch == ';') {
 				if (memcmp("uniform", begin - 6, 7) != 0 && memcmp("const", begin - 4, 5) != 0) {
 					dstr_insert(effect_text, begin - effect_text->array + 1, "uniform ");
 					diff += 8;
