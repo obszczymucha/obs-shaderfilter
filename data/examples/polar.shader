@@ -57,10 +57,18 @@ float4 mainImage(VertData v_in) : TARGET
     uv.x -= center_x ;
     uv.y -= center_y ;
     uv.x = uv.x * ( uv_size.x / uv_size.y);
-    float pixel_angle = mod(atan2(uv.x,uv.y)/PI_2*repeat+0.5+rotate, 1.0);
+    float pixel_angle = atan2(uv.x,uv.y)/PI_2+0.5;
+    if(repeat < 1.0){
+        pixel_angle = mod(pixel_angle+rotate,1.0);
+        if(pixel_angle > repeat)
+            return float4(0,0,0,0);
+        pixel_angle = mod(pixel_angle/repeat,1.0);
+    } else {
+        pixel_angle = mod(pixel_angle*repeat+rotate, 1.0);
+    }
     float pixel_distance = length(uv)/ scale - point_y;
     float2 uv2 = float2(pixel_angle , pixel_distance);
     if(flip)
-        uv2.y = 1.0 - uv2.y;
+        uv2 = float2(1.0,1.0) - uv2;
     return image.Sample(textureSampler,uv2);
 }
