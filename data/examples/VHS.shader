@@ -16,10 +16,10 @@ uniform float offsetIntensity<
     float maximum = 0.20;
     float step = 0.01;
 > = 0.02;
-uniform int noiseQuality<
+uniform float noiseQuality<
     string label = "Noise number of lines (250)";
     string widget_type = "slider";
-    int minimum = 1.0;
+    float minimum = 1.0;
     float maximum = 1000.0;
     float step = 10.0;
 > = 250.0;
