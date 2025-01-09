@@ -388,7 +388,7 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	obs_data_t *settings = obs_source_get_settings(filter->context);
 
 	// First, clean up the old effect and all references to it.
-	filter->shader_start_time = 0.0;
+	filter->shader_start_time = 0.0f;
 	shader_filter_clear_params(filter);
 
 	if (filter->effect != NULL) {
@@ -1775,6 +1775,8 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 
 	dstr_replace(&effect_text, "uniform float elapsed_time;", "");
 
+	dstr_replace(&effect_text, "iDate.w", "local_time");
+
 	dstr_replace(&effect_text, "bvec2", "bool2");
 	dstr_replace(&effect_text, "bvec3", "bool3");
 	dstr_replace(&effect_text, "bvec4", "bool4");
@@ -2481,7 +2483,7 @@ static void shader_filter_tick(void *data, float seconds)
 	filter->uv_pixel_interval.x = 1.0f / base_width;
 	filter->uv_pixel_interval.y = 1.0f / base_height;
 
-	if (filter->shader_start_time == 0) {
+	if (filter->shader_start_time == 0.0f) {
 		filter->shader_start_time = filter->elapsed_time + seconds;
 	}
 	filter->elapsed_time += seconds;
@@ -2822,6 +2824,8 @@ void shader_filter_deactivate(void *data)
 
 void shader_filter_show(void *data)
 {
+	struct shader_filter_data *filter = data;
+	filter->shader_start_time = 0.0f;
 	shader_filter_param_source_action(data, obs_source_inc_showing);
 }
 
