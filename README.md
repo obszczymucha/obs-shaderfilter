@@ -54,8 +54,6 @@ Normally, all that's required for OBS purposes is a pixel shader, so the plugin 
 standard template to add a basic vertex shader and other boilerplate. If you wish to customize the vertex shader
 or other parts of the effect for some reason, you can check the "Use Effect File (.effect)" option. 
 
-`Use Shader Time` Start the effect from the loadtime of the shader, not the start up time of OBS Studio.
-
 Any parameters you add to your shader (defined as `uniform` variables) will be detected by the plugin and exposed
 in the properties window to have their values set. Currently, only `int`, `float`, `bool`, `string`, `texture2d`, and `float4`
 parameters are supported. (`float4` parameters will be interpreted by the properties window as colors.) `string` is used for 
@@ -115,6 +113,10 @@ handle these variables being missing, but the shader may malfunction.)
   the source or the output of the previous filter in the chain. (Standard for all OBS filters.)
 * **`elapsed_time`** (`float`)&mdash;The time in seconds which has elapsed since the filter was created. Useful for 
   creating animations.
+* **`elapsed_time_start`** (`float`)&mdash;The time in seconds which has elapsed since the shader was loaded (2.4.0).
+* **`elapsed_time_show`** (`float`)&mdash;The time in seconds which has elapsed since the filter was shown (2.4.0).
+* **`elapsed_time_active`** (`float`)&mdash;The time in seconds which has elapsed since the filter has become active (2.4.0).
+* **`elapsed_time_enable`** (`float`)&mdash;The time in seconds which has elapsed since the filter was enabled (2.4.0).
 * **`local_time`** (`float`)&mdash; a random float representing the local time.(1.2)
 * **`loops`** (`int`)&mdash; count of how many loops times the shader has rendered a page.(1.2)
 * **`rand_f`** (`float`)&mdash; a random float between 0 and 1. changes per frame.

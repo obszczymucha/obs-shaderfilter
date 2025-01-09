@@ -35,6 +35,10 @@ uniform float rand_f;\n\
 uniform float rand_instance_f;\n\
 uniform float rand_activation_f;\n\
 uniform float elapsed_time;\n\
+uniform float elapsed_time_start;\n\
+uniform float elapsed_time_show;\n\
+uniform float elapsed_time_active;\n\
+uniform float elapsed_time_enable;\n\
 uniform int loops;\n\
 uniform float local_time;\n\
 \n\
@@ -165,12 +169,20 @@ struct shader_filter_data {
 	bool rendered;
 
 	float shader_start_time;
+	float shader_show_time;
+	float shader_active_time;
+	float shader_enable_time;
+	bool enabled;
 
 	gs_eparam_t *param_uv_offset;
 	gs_eparam_t *param_uv_scale;
 	gs_eparam_t *param_uv_pixel_interval;
 	gs_eparam_t *param_uv_size;
 	gs_eparam_t *param_elapsed_time;
+	gs_eparam_t *param_elapsed_time_start;
+	gs_eparam_t *param_elapsed_time_show;
+	gs_eparam_t *param_elapsed_time_active;
+	gs_eparam_t *param_elapsed_time_enable;
 	gs_eparam_t *param_loops;
 	gs_eparam_t *param_local_time;
 	gs_eparam_t *param_rand_f;
@@ -189,7 +201,6 @@ struct shader_filter_data {
 
 	int total_width;
 	int total_height;
-	bool use_shader_elapsed_time;
 	bool no_repeat;
 	bool rendering;
 
@@ -284,6 +295,10 @@ static char *load_shader_from_file(const char *file_name) // add input of visite
 static void shader_filter_clear_params(struct shader_filter_data *filter)
 {
 	filter->param_elapsed_time = NULL;
+	filter->param_elapsed_time_start = NULL;
+	filter->param_elapsed_time_show = NULL;
+	filter->param_elapsed_time_active = NULL;
+	filter->param_elapsed_time_enable = NULL;
 	filter->param_uv_offset = NULL;
 	filter->param_uv_pixel_interval = NULL;
 	filter->param_uv_scale = NULL;
@@ -482,6 +497,14 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 			filter->param_uv_size = param;
 		} else if (strcmp(info.name, "elapsed_time") == 0) {
 			filter->param_elapsed_time = param;
+		} else if (strcmp(info.name, "elapsed_time_start") == 0) {
+			filter->param_elapsed_time_start = param;
+		} else if (strcmp(info.name, "elapsed_time_show") == 0) {
+			filter->param_elapsed_time_show = param;
+		} else if (strcmp(info.name, "elapsed_time_active") == 0) {
+			filter->param_elapsed_time_active = param;
+		} else if (strcmp(info.name, "elapsed_time_enable") == 0) {
+			filter->param_elapsed_time_enable = param;
 		} else if (strcmp(info.name, "rand_f") == 0) {
 			filter->param_rand_f = param;
 		} else if (strcmp(info.name, "rand_activation_f") == 0) {
@@ -673,19 +696,6 @@ static bool shader_filter_file_name_changed(obs_properties_t *props, obs_propert
 	return false;
 }
 
-static bool use_shader_elapsed_time_changed(obs_properties_t *props, obs_property_t *p, obs_data_t *settings)
-{
-	UNUSED_PARAMETER(p);
-	struct shader_filter_data *filter = obs_properties_get_param(props);
-
-	bool use_shader_elapsed_time = obs_data_get_bool(settings, "use_shader_elapsed_time");
-	if (use_shader_elapsed_time != filter->use_shader_elapsed_time) {
-		filter->reload_effect = true;
-	}
-	filter->use_shader_elapsed_time = use_shader_elapsed_time;
-
-	return false;
-}
 static bool shader_filter_reload_effect_clicked(obs_properties_t *props, obs_property_t *property, void *data)
 {
 	UNUSED_PARAMETER(props);
@@ -2021,9 +2031,6 @@ static obs_properties_t *shader_filter_properties(void *data)
 		}
 		obs_data_release(settings);
 	}
-	obs_property_t *use_shader_elapsed_time =
-		obs_properties_add_bool(props, "use_shader_elapsed_time", obs_module_text("ShaderFilter.UseShaderElapsedTime"));
-	obs_property_set_modified_callback(use_shader_elapsed_time, use_shader_elapsed_time_changed);
 
 	obs_properties_add_button(props, "reload_effect", obs_module_text("ShaderFilter.ReloadEffect"),
 				  shader_filter_reload_effect_clicked);
@@ -2264,7 +2271,6 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 	filter->expand_right = (int)obs_data_get_int(settings, "expand_right");
 	filter->expand_top = (int)obs_data_get_int(settings, "expand_top");
 	filter->expand_bottom = (int)obs_data_get_int(settings, "expand_bottom");
-	filter->use_shader_elapsed_time = (bool)obs_data_get_bool(settings, "use_shader_elapsed_time");
 	filter->rand_activation_f = (float)((double)rand_interval(0, 10000) / (double)10000);
 
 	if (filter->reload_effect) {
@@ -2497,6 +2503,11 @@ static void shader_filter_tick(void *data, float seconds)
 			filter->loops = -filter->loops;
 	}
 	filter->local_time = (float)(os_gettime_ns() / 1000000000.0);
+	if (filter->enabled != obs_source_enabled(filter->context)) {
+		filter->enabled = !filter->enabled;
+		if (filter->enabled)
+			filter->shader_enable_time = filter->elapsed_time;
+	}
 
 	// undecided between this and "rand_float(1);"
 	filter->rand_f = (float)((double)rand_interval(0, 10000) / (double)10000);
@@ -2602,11 +2613,19 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 		gs_effect_set_vec2(filter->param_uv_pixel_interval, &filter->uv_pixel_interval);
 	}
 	if (filter->param_elapsed_time != NULL) {
-		if (filter->use_shader_elapsed_time) {
-			gs_effect_set_float(filter->param_elapsed_time, filter->elapsed_time - filter->shader_start_time);
-		} else {
-			gs_effect_set_float(filter->param_elapsed_time, filter->elapsed_time);
-		}
+		gs_effect_set_float(filter->param_elapsed_time, filter->elapsed_time);
+	}
+	if (filter->param_elapsed_time_start != NULL) {
+		gs_effect_set_float(filter->param_elapsed_time_start, filter->elapsed_time - filter->shader_start_time);
+	}
+	if (filter->param_elapsed_time_show != NULL) {
+		gs_effect_set_float(filter->param_elapsed_time_show, filter->elapsed_time - filter->shader_show_time);
+	}
+	if (filter->param_elapsed_time_active != NULL) {
+		gs_effect_set_float(filter->param_elapsed_time_active, filter->elapsed_time - filter->shader_active_time);
+	}
+	if (filter->param_elapsed_time_enable != NULL) {
+		gs_effect_set_float(filter->param_elapsed_time_enable, filter->elapsed_time - filter->shader_enable_time);
 	}
 	if (filter->param_uv_size != NULL) {
 		gs_effect_set_vec2(filter->param_uv_size, &filter->uv_size);
@@ -2814,6 +2833,8 @@ void shader_filter_param_source_action(void *data, void (*action)(obs_source_t *
 
 void shader_filter_activate(void *data)
 {
+	struct shader_filter_data *filter = data;
+	filter->shader_active_time = filter->elapsed_time;
 	shader_filter_param_source_action(data, obs_source_inc_active);
 }
 
@@ -2825,7 +2846,7 @@ void shader_filter_deactivate(void *data)
 void shader_filter_show(void *data)
 {
 	struct shader_filter_data *filter = data;
-	filter->shader_start_time = 0.0f;
+	filter->shader_show_time = filter->elapsed_time;
 	shader_filter_param_source_action(data, obs_source_inc_showing);
 }
 
