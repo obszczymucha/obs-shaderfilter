@@ -1813,7 +1813,8 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "dFdy(", "ddy(");
 	dstr_replace(&effect_text, "mix(", "lerp(");
 	dstr_replace(&effect_text, "fract(", "frac(");
-
+	dstr_replace(&effect_text, "inversesqrt(", "rsqrt(");
+	
 	dstr_replace(&effect_text, "extern bool", "uniform bool");
 	dstr_replace(&effect_text, "extern uint", "uniform uint");
 	dstr_replace(&effect_text, "extern int", "uniform int");
