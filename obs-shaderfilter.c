@@ -40,6 +40,7 @@ uniform float elapsed_time_show;\n\
 uniform float elapsed_time_active;\n\
 uniform float elapsed_time_enable;\n\
 uniform int loops;\n\
+uniform float loop_second;\n\
 uniform float local_time;\n\
 \n\
 sampler_state textureSampler{\n\
@@ -184,6 +185,7 @@ struct shader_filter_data {
 	gs_eparam_t *param_elapsed_time_active;
 	gs_eparam_t *param_elapsed_time_enable;
 	gs_eparam_t *param_loops;
+	gs_eparam_t *param_loop_second;
 	gs_eparam_t *param_local_time;
 	gs_eparam_t *param_rand_f;
 	gs_eparam_t *param_rand_instance_f;
@@ -307,6 +309,7 @@ static void shader_filter_clear_params(struct shader_filter_data *filter)
 	filter->param_rand_activation_f = NULL;
 	filter->param_rand_instance_f = NULL;
 	filter->param_loops = NULL;
+	filter->param_loop_second = NULL;
 	filter->param_local_time = NULL;
 	filter->param_image = NULL;
 	filter->param_image_a = NULL;
@@ -513,6 +516,8 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 			filter->param_rand_instance_f = param;
 		} else if (strcmp(info.name, "loops") == 0) {
 			filter->param_loops = param;
+		} else if (strcmp(info.name, "loop_second") == 0) {
+			filter->param_loop_second = param;
 		} else if (strcmp(info.name, "local_time") == 0) {
 			filter->param_local_time = param;
 		} else if (strcmp(info.name, "ViewProj") == 0) {
@@ -2495,8 +2500,8 @@ static void shader_filter_tick(void *data, float seconds)
 	}
 	filter->elapsed_time += seconds;
 	filter->elapsed_time_loop += seconds;
-	if (filter->elapsed_time_loop > 1.) {
-		filter->elapsed_time_loop -= 1.;
+	if (filter->elapsed_time_loop > 1.0f) {
+		filter->elapsed_time_loop -= 1.0f;
 
 		// Loops
 		filter->loops += 1;
@@ -2508,6 +2513,16 @@ static void shader_filter_tick(void *data, float seconds)
 		filter->enabled = !filter->enabled;
 		if (filter->enabled)
 			filter->shader_enable_time = filter->elapsed_time;
+	}
+	if (obs_source_enabled(filter->context) && obs_source_active(obs_filter_get_parent(filter->context))) {
+		filter->shader_active_time += seconds;
+	} else {
+		filter->shader_active_time = 0.0f;
+	}
+	if (obs_source_enabled(filter->context) && obs_source_showing(obs_filter_get_parent(filter->context))) {
+		filter->shader_show_time += seconds;
+	} else {
+		filter->shader_show_time = 0.0f;
 	}
 
 	// undecided between this and "rand_float(1);"
@@ -2620,10 +2635,10 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 		gs_effect_set_float(filter->param_elapsed_time_start, filter->elapsed_time - filter->shader_start_time);
 	}
 	if (filter->param_elapsed_time_show != NULL) {
-		gs_effect_set_float(filter->param_elapsed_time_show, filter->elapsed_time - filter->shader_show_time);
+		gs_effect_set_float(filter->param_elapsed_time_show, filter->shader_show_time);
 	}
 	if (filter->param_elapsed_time_active != NULL) {
-		gs_effect_set_float(filter->param_elapsed_time_active, filter->elapsed_time - filter->shader_active_time);
+		gs_effect_set_float(filter->param_elapsed_time_active, filter->shader_active_time);
 	}
 	if (filter->param_elapsed_time_enable != NULL) {
 		gs_effect_set_float(filter->param_elapsed_time_enable, filter->elapsed_time - filter->shader_enable_time);
@@ -2834,8 +2849,6 @@ void shader_filter_param_source_action(void *data, void (*action)(obs_source_t *
 
 void shader_filter_activate(void *data)
 {
-	struct shader_filter_data *filter = data;
-	filter->shader_active_time = filter->elapsed_time;
 	shader_filter_param_source_action(data, obs_source_inc_active);
 }
 
@@ -2846,8 +2859,6 @@ void shader_filter_deactivate(void *data)
 
 void shader_filter_show(void *data)
 {
-	struct shader_filter_data *filter = data;
-	filter->shader_show_time = filter->elapsed_time;
 	shader_filter_param_source_action(data, obs_source_inc_showing);
 }
 
