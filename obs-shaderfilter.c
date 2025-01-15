@@ -1819,7 +1819,7 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 	dstr_replace(&effect_text, "mix(", "lerp(");
 	dstr_replace(&effect_text, "fract(", "frac(");
 	dstr_replace(&effect_text, "inversesqrt(", "rsqrt(");
-	
+
 	dstr_replace(&effect_text, "extern bool", "uniform bool");
 	dstr_replace(&effect_text, "extern uint", "uniform uint");
 	dstr_replace(&effect_text, "extern int", "uniform int");
@@ -1878,6 +1878,10 @@ static bool shader_filter_convert(obs_properties_t *props, obs_property_t *prope
 
 	if (dstr_find(&effect_text, "mod("))
 		dstr_cat(&insert_text, "#define mod(x,y) (x - y * floor(x / y))\n");
+	if (dstr_find(&effect_text, "lessThan("))
+		dstr_cat(&insert_text, "#define lessThan(a,b) (a < b)\n");
+	if (dstr_find(&effect_text, "greaterThan("))
+		dstr_cat(&insert_text, "#define greaterThan(a,b) (a > b)\n");
 	dstr_cat(&insert_text, "#endif\n");
 
 	if (dstr_find(&effect_text, "iMouse") && !dstr_find(&effect_text, "float2 iMouse"))

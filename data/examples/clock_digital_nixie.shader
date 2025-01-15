@@ -27,13 +27,8 @@ uniform float3 anodehighlightscolor = {1.0,0.5,0.0};
 
 #ifndef OPENGL
 #define mod(x,y) (x - y * floor(x / y))
-bool2 greaterThan(float2 a, float2 b){
-    return bool2(a.x > b.x, a.y > b.y);
-}
-
-bool2 lessThan(float2 a, float2 b){
-    return bool2(a.x < b.x, a.y < b.y);
-}
+#define lessThan(a,b) (a < b)
+#define greaterThan(a,b) (a > b)
 #endif
 
 // psrdnoise (c) Stefan Gustavson and Ian McEwan,
