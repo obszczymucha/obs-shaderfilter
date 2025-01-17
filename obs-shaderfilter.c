@@ -10,7 +10,6 @@
 #include <util/dstr.h>
 #include <util/darray.h>
 #include <util/platform.h>
-
 #include <float.h>
 #include <limits.h>
 #include <stdio.h>
@@ -18,6 +17,11 @@
 #include <string.h>
 
 #include <util/threading.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
 
 #include "version.h"
 
@@ -179,6 +183,15 @@ struct shader_filter_data {
 	gs_eparam_t *param_uv_scale;
 	gs_eparam_t *param_uv_pixel_interval;
 	gs_eparam_t *param_uv_size;
+	gs_eparam_t *param_current_time_ms;
+	gs_eparam_t *param_current_time_sec;
+	gs_eparam_t *param_current_time_min;
+	gs_eparam_t *param_current_time_hour;
+	gs_eparam_t *param_current_time_day_of_week;
+	gs_eparam_t *param_current_time_day_of_month;
+	gs_eparam_t *param_current_time_month;
+	gs_eparam_t *param_current_time_day_of_year;
+	gs_eparam_t *param_current_time_year;
 	gs_eparam_t *param_elapsed_time;
 	gs_eparam_t *param_elapsed_time_start;
 	gs_eparam_t *param_elapsed_time_show;
@@ -296,6 +309,15 @@ static char *load_shader_from_file(const char *file_name) // add input of visite
 
 static void shader_filter_clear_params(struct shader_filter_data *filter)
 {
+	filter->param_current_time_ms = NULL;
+	filter->param_current_time_sec = NULL;
+	filter->param_current_time_min = NULL;
+	filter->param_current_time_hour = NULL;
+	filter->param_current_time_day_of_week = NULL;
+	filter->param_current_time_day_of_month = NULL;
+	filter->param_current_time_month = NULL;
+	filter->param_current_time_day_of_year = NULL;
+	filter->param_current_time_year = NULL;
 	filter->param_elapsed_time = NULL;
 	filter->param_elapsed_time_start = NULL;
 	filter->param_elapsed_time_show = NULL;
@@ -498,6 +520,24 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 			filter->param_uv_pixel_interval = param;
 		} else if (strcmp(info.name, "uv_size") == 0) {
 			filter->param_uv_size = param;
+		} else if (strcmp(info.name, "current_time_ms") == 0) {
+			filter->param_current_time_ms = param;
+		} else if (strcmp(info.name, "current_time_sec") == 0) {
+			filter->param_current_time_sec = param;
+		} else if (strcmp(info.name, "current_time_min") == 0) {
+			filter->param_current_time_min = param;
+		} else if (strcmp(info.name, "current_time_hour") == 0) {
+			filter->param_current_time_hour = param;
+		} else if (strcmp(info.name, "current_time_day_of_week") == 0) {
+			filter->param_current_time_day_of_week = param;
+		} else if (strcmp(info.name, "current_time_day_of_month") == 0) {
+			filter->param_current_time_day_of_month = param;
+		} else if (strcmp(info.name, "current_time_month") == 0) {
+			filter->param_current_time_month = param;
+		} else if (strcmp(info.name, "current_time_day_of_year") == 0) {
+			filter->param_current_time_day_of_year = param;
+		} else if (strcmp(info.name, "current_time_year") == 0) {
+			filter->param_current_time_year = param;
 		} else if (strcmp(info.name, "elapsed_time") == 0) {
 			filter->param_elapsed_time = param;
 		} else if (strcmp(info.name, "elapsed_time_start") == 0) {
@@ -2631,6 +2671,40 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 	}
 	if (filter->param_uv_pixel_interval != NULL) {
 		gs_effect_set_vec2(filter->param_uv_pixel_interval, &filter->uv_pixel_interval);
+	}
+	if (filter->param_current_time_ms != NULL) {
+#ifdef _WIN32
+		SYSTEMTIME system_time;
+		GetSystemTime(&system_time);
+		gs_effect_set_int(filter->param_current_time_ms, system_time.wMilliseconds);
+#else
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		gs_effect_set_int(filter->param_current_time_ms, tv.tv_usec / 1000);
+#endif
+	}
+	if (filter->param_current_time_sec != NULL || filter->param_current_time_min != NULL ||
+	    filter->param_current_time_hour != NULL || filter->param_current_time_day_of_week != NULL ||
+	    filter->param_current_time_day_of_month != NULL || filter->param_current_time_month != NULL ||
+	    filter->param_current_time_day_of_year != NULL || filter->param_current_time_year != NULL) {
+		time_t t = time(NULL);
+		struct tm *lt = localtime(&t);
+		if (filter->param_current_time_sec != NULL)
+			gs_effect_set_int(filter->param_current_time_sec, lt->tm_sec);
+		if (filter->param_current_time_min != NULL)
+			gs_effect_set_int(filter->param_current_time_min, lt->tm_min);
+		if (filter->param_current_time_hour != NULL)
+			gs_effect_set_int(filter->param_current_time_hour, lt->tm_hour);
+		if (filter->param_current_time_day_of_week != NULL)
+			gs_effect_set_int(filter->param_current_time_day_of_week, lt->tm_wday);
+		if (filter->param_current_time_day_of_month != NULL)
+			gs_effect_set_int(filter->param_current_time_day_of_month, lt->tm_mday);
+		if (filter->param_current_time_month != NULL)
+			gs_effect_set_int(filter->param_current_time_month, lt->tm_mon);
+		if (filter->param_current_time_day_of_year != NULL)
+			gs_effect_set_int(filter->param_current_time_day_of_year, lt->tm_yday);
+		if (filter->param_current_time_year != NULL)
+			gs_effect_set_int(filter->param_current_time_year, lt->tm_year);
 	}
 	if (filter->param_elapsed_time != NULL) {
 		gs_effect_set_float(filter->param_elapsed_time, filter->elapsed_time);

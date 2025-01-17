@@ -6,6 +6,10 @@
 #define mod(x,y) (x - y * floor(x / y))
 #endif
 
+uniform int current_time_sec;
+uniform int current_time_min;
+uniform int current_time_hour;
+
 uniform int timeMode<
   string label = "Time mode";
   string widget_type = "select";
@@ -115,48 +119,73 @@ float4 mainImage(VertData v_in) : TARGET
     uv.x += 3.5;
 	float seg = 0.0;
 
-	float timeSecs = 0.0;
 	if(timeMode == 0){
-		timeSecs = local_time;
-	}else if(timeMode == 1){
-		timeSecs = elapsed_time_enable;
-	}else if(timeMode == 2){
-		timeSecs = elapsed_time_active;
-	}else if(timeMode == 3){
-		timeSecs = elapsed_time_show;
-	}else if(timeMode == 4){
-		timeSecs = elapsed_time_start;
-	}
-	timeSecs += offsetSeconds + offsetHours*3600;
-	if(timeSecs < 0)
-		timeSecs = 0.9999-timeSecs;
-	seg += showNum(uv,int(mod(timeSecs,60.0)),false);
-	
-	timeSecs = floor(timeSecs/60.0);
-	
-    uv.x -= 1.75;
+		seg += showNum(uv,current_time_sec,false);
+		uv.x -= 1.75;
+		seg += dots(uv);
+		uv.x -= 1.75;
+		seg += showNum(uv,current_time_min,false);
+		uv.x -= 1.75;
+		seg += dots(uv);
+		uv.x -= 1.75;
+		if (ampm) {
+			if(current_time_hour == 0){
+				seg += showNum(uv,12,true);
+			}else if(current_time_hour > 12){
+				seg += showNum(uv,current_time_hour-12,true);
+			}else{
+				seg += showNum(uv,current_time_hour,true);
+			}
+		} else {
+			seg += showNum(uv,current_time_hour,true);
+		}
+	}else{
+		float timeSecs = 0.0;
+		if(timeMode == 1){
+			timeSecs = elapsed_time_enable;
+		}else if(timeMode == 2){
+			timeSecs = elapsed_time_active;
+		}else if(timeMode == 3){
+			timeSecs = elapsed_time_show;
+		}else if(timeMode == 4){
+			timeSecs = elapsed_time_start;
+		}
 
-	seg += dots(uv);
-	
-    uv.x -= 1.75;
-	
-	seg += showNum(uv,int(mod(timeSecs,60.0)),false);
-	
-	timeSecs = floor(timeSecs/60.0);
-	if (ampm)
-	{
-		if (timeSecs > 12.0)
-		  timeSecs = mod(timeSecs,12.0);
-	}else if (timeSecs > 24.0) {
-		timeSecs = mod(timeSecs,24.0);
+		timeSecs += offsetSeconds + offsetHours*3600;
+		if(timeSecs < 0)
+			timeSecs = 0.9999-timeSecs;
+		seg += showNum(uv,int(mod(timeSecs,60.0)),false);
+		
+		timeSecs = floor(timeSecs/60.0);
+		
+		uv.x -= 1.75;
+
+		seg += dots(uv);
+		
+		uv.x -= 1.75;
+		
+		seg += showNum(uv,int(mod(timeSecs,60.0)),false);
+		
+		timeSecs = floor(timeSecs/60.0);
+		if (ampm)
+		{
+			if(timeSecs == 0.0){
+				timeSecs = 12.0;
+			}else if (timeSecs > 12.0){
+				timeSecs = mod(timeSecs,12.0);
+			}
+		}else if (timeSecs > 24.0) {
+			timeSecs = mod(timeSecs,24.0);
+		}
+		
+		uv.x -= 1.75;
+		
+		seg += dots(uv);
+		
+		uv.x -= 1.75;
+		seg += showNum(uv,int(mod(timeSecs,60.0)),true);
 	}
-	
-    uv.x -= 1.75;
-	
-	seg += dots(uv);
-	
-    uv.x -= 1.75;
-	seg += showNum(uv,int(mod(timeSecs,60.0)),true);
+
 	
 	if (seg==0.0){
 		return image.Sample(textureSampler, v_in.uv);

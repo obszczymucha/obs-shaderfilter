@@ -1,5 +1,8 @@
 //based on https://www.shadertoy.com/view/fsBcRm
-
+uniform int current_time_ms;
+uniform int current_time_sec;
+uniform int current_time_min;
+uniform int current_time_hour;
 uniform int timeMode<
   string label = "Time mode";
   string widget_type = "select";
@@ -381,7 +384,7 @@ float4 mainImage(VertData v_in) : TARGET
     float2 uv = ((float2(v_in.uv.x,1.0-v_in.uv.y) * uv_size)/uv_size.x);
     float time = 0.0;
 	if(timeMode == 0){
-		time = local_time;
+		time = float(current_time_hour*3600+current_time_min*60+current_time_sec) + float(current_time_ms)/1000.0;
 	}else if(timeMode == 1){
 		time = elapsed_time_enable;
 	}else if(timeMode == 2){
@@ -434,14 +437,14 @@ float4 mainImage(VertData v_in) : TARGET
     // "flare" is a wide blurry region around the characters, and
     // "flarenoise" is a spatio-temporal modulation of its extents
     // (slight flickering, but not all characters at the same time)
-    float flarenoise = psrdnoise(float2(p.x*0.1,5.0*time), float2(0.0,0.0), 0.0, g);
+    float flarenoise = psrdnoise(float2(p.x*0.1,5.0*elapsed_time), float2(0.0,0.0), 0.0, g);
     float flare = 1.0-smoothstep(0.0, 2.5, d + 0.05*flarenoise);
     flare *= flare; // A more rapid decline towards the edge
     // "glow" is a variation in the intensity of the glowy cathode (core)
-    float glow = 0.8+0.2*psrdnoise(p - float2(0.0, 2.0*time), float2(0.0,0.0), 4.0*time, g);
+    float glow = 0.8+0.2*psrdnoise(p - float2(0.0, 2.0*elapsed_time), float2(0.0,0.0), 4.0*time, g);
     // Now we mess up the distance field a little for the "halo" effect
-    d += 0.1*psrdnoise(p - float2(0.0, 2.0*time), float2(0.0,0.0), 8.0*time, g);
-    d += 0.05*psrdnoise(2.0*p - float2(0.0, 4.0*time) + 0.15*g, float2(0.0,0.0), -16.0*time, g);
+    d += 0.1*psrdnoise(p - float2(0.0, 2.0*elapsed_time), float2(0.0,0.0), 8.0*time, g);
+    d += 0.05*psrdnoise(2.0*p - float2(0.0, 4.0*elapsed_time) + 0.15*g, float2(0.0,0.0), -16.0*time, g);
     // "halo" is a kind of flame/plasma cloud near the core. A real Nixie tube
     // doesn't have this, but it adds some appealing visual detail.
     // Looks more like hot filaments than "cold cathodes", but... oh, well.

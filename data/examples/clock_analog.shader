@@ -1,5 +1,8 @@
 //Based on https://www.shadertoy.com/view/XdKXzy
-
+uniform int current_time_ms;
+uniform int current_time_sec;
+uniform int current_time_min;
+uniform int current_time_hour;
 uniform float3 hour_handle_color = {1.0,1.0,1.0};
 uniform float3 minute_handle_color = {1.0,1.0,1.0};
 uniform float3 second_handle_color = {1.0,0.0,0.0};
@@ -133,7 +136,7 @@ float4 mainImage(VertData v_in) : TARGET
     }
     
     if (centerdist < 1.0) {
-        float elapsed_time = (floor(local_time+(time_offset_hours*3600.0))+pow(frac(local_time),16.0));
+        float elapsed_time = float((time_offset_hours+current_time_hour)*3600+current_time_min*60+current_time_sec) + pow(float(current_time_ms)/1000.0,16.0);
         // hour
         color = styleHandle(color, px,
                             rln(uv, -0.05, 0.5, elapsed_time / 3600.0 / 12.0),
