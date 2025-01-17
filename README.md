@@ -118,7 +118,17 @@ handle these variables being missing, but the shader may malfunction.)
 * **`elapsed_time_active`** (`float`)&mdash;The time in seconds which has elapsed since the filter has become active (2.4.0).
 * **`elapsed_time_enable`** (`float`)&mdash;The time in seconds which has elapsed since the filter was enabled (2.4.0).
 * **`local_time`** (`float`)&mdash; a random float representing the local time.(1.2)
-* **`loops`** (`int`)&mdash; count of how many loops times the shader has rendered a page.(1.2)
+* **`loops`** (`int`)&mdash; count of how many seconds the shader has rendered a page.(1.2)
+* **`loop_second`** (`float`)&mdash; a float going from 0.0 to 1.0 each loop.(2.4.0)
+* **`current_time_ms`** (`int`)&mdash; the microseconds (0 to 999) of the current time.(2.4.1)
+* **`current_time_sec`** (`int`)&mdash; the seconds (0 to 59) of the current time.(2.4.1)
+* **`current_time_min`** (`int`)&mdash; the minutes (0 to 59) of the current time.(2.4.1)
+* **`current_time_hour`** (`int`)&mdash; the hours (0 to 23) of the current time.(2.4.1)
+* **`current_time_day_of_week`** (`int`)&mdash; the day of the week (0 to 6) of the current time.(2.4.1)
+* **`current_time_day_of_month`** (`int`)&mdash; the day of the month (1 to 31) of the current time.(2.4.1)
+* **`current_time_month`** (`int`)&mdash; the month (0 to 11) of the current time.(2.4.1)
+* **`current_time_day_of_year`** (`int`)&mdash; the day of the month (0 to 365) of the current time.(2.4.1)
+* **`current_time_year`** (`int`)&mdash; the number of years since 1900 of the current time.(2.4.1)
 * **`rand_f`** (`float`)&mdash; a random float between 0 and 1. changes per frame.
 * **`rand_activation_f`** (`float`)&mdash; a random float between 0 and 1. changes per activation, load or change of settings.(1.2)
 * **`rand_instance_f`** (`float`)&mdash; a random float between 0 and 1. changes per instance on load.(1.2)
