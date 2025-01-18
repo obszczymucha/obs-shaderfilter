@@ -444,7 +444,15 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 
 	if (obs_data_get_bool(settings, "from_file")) {
 		const char *file_name = obs_data_get_string(settings, "shader_file_name");
+		if (!strlen(file_name)) {
+			obs_data_unset_user_value(settings, "last_error");
+			goto end;
+		}
 		shader_text = load_shader_from_file(file_name);
+		if (!shader_text) {
+			obs_data_set_string(settings, "last_error", obs_module_text("ShaderFilter.FileLoadFailed"));
+			goto end;
+		}
 	} else {
 		shader_text = bstrdup(obs_data_get_string(settings, "shader_text"));
 		use_template = true;
