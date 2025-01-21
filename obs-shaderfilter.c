@@ -255,8 +255,10 @@ static char *load_shader_from_file(const char *file_name) // add input of visite
 {
 
 	char *file_ptr = os_quick_read_utf8_file(file_name);
-	if (file_ptr == NULL)
+	if (file_ptr == NULL) {
+		blog(LOG_WARNING, "[obs-shaderfilter] failed to read file: %s", file_name);
 		return NULL;
+	}
 	char **lines = strlist_split(file_ptr, '\n', true);
 	struct dstr shader_file;
 	dstr_init(&shader_file);
@@ -397,7 +399,14 @@ static void load_output_effect(struct shader_filter_data *filter)
 	struct dstr filename = {0};
 	dstr_cat(&filename, obs_get_module_data_path(obs_current_module()));
 	dstr_cat(&filename, "/internal/render_output.effect");
-	shader_text = load_shader_from_file(filename.array);
+	char *abs_path = os_get_abs_path_ptr(filename.array);
+	if (abs_path) {
+		shader_text = load_shader_from_file(abs_path);
+		bfree(abs_path);
+	}
+	if (!shader_text)
+		shader_text = load_shader_from_file(filename.array);
+
 	char *errors = NULL;
 	dstr_free(&filename);
 
@@ -407,7 +416,7 @@ static void load_output_effect(struct shader_filter_data *filter)
 
 	bfree(shader_text);
 	if (filter->output_effect == NULL) {
-		blog(LOG_WARNING, "[obs-shaderfilter] Unable to load output.effect file.  Errors:\n%s",
+		blog(LOG_WARNING, "[obs-shaderfilter] Unable to load render_output.effect file.  Errors:\n%s",
 		     (errors == NULL || strlen(errors) == 0 ? "(None)" : errors));
 		bfree(errors);
 	} else {
@@ -2075,9 +2084,13 @@ static obs_properties_t *shader_filter_properties(void *data)
 
 	obs_properties_add_button2(props, "shader_convert", obs_module_text("ShaderFilter.Convert"), shader_filter_convert, data);
 
+	char *abs_path = os_get_abs_path_ptr(examples_path.array);
 	obs_property_t *file_name = obs_properties_add_path(props, "shader_file_name",
 							    obs_module_text("ShaderFilter.ShaderFileName"), OBS_PATH_FILE, NULL,
-							    examples_path.array);
+							    abs_path ? abs_path : examples_path.array);
+	if (abs_path)
+		bfree(abs_path);
+	dstr_free(&examples_path);
 	obs_property_set_modified_callback(file_name, shader_filter_file_name_changed);
 
 	if (filter) {
@@ -2310,7 +2323,6 @@ static obs_properties_t *shader_filter_properties(void *data)
 		dstr_free(&display_name);
 	}
 	da_free(groups);
-	dstr_free(&examples_path);
 
 	obs_properties_add_text(
 		props, "plugin_info",
