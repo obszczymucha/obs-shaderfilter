@@ -516,7 +516,8 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 	size_t effect_count = gs_effect_get_num_params(filter->effect);
 	for (size_t effect_index = 0; effect_index < effect_count; effect_index++) {
 		gs_eparam_t *param = gs_effect_get_param_by_idx(filter->effect, effect_index);
-
+		if (!param)
+			continue;
 		struct gs_effect_param_info info;
 		gs_effect_get_param_info(param, &info);
 
@@ -2751,6 +2752,8 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 	size_t param_count = filter->stored_param_list.num;
 	for (size_t param_index = 0; param_index < param_count; param_index++) {
 		struct effect_param_data *param = (filter->stored_param_list.array + param_index);
+		if (!param->param)
+			continue;
 		obs_source_t *source = NULL;
 
 		switch (param->type) {
