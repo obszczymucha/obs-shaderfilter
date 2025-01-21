@@ -2673,6 +2673,8 @@ static void draw_output(struct shader_filter_data *filter)
 
 	gs_texture_t *texture = gs_texrender_get_texture(filter->output_texrender);
 	gs_effect_t *pass_through = filter->output_effect;
+	if (!pass_through)
+		pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
 
 	if (filter->param_output_image) {
 		gs_effect_set_texture(filter->param_output_image, texture);
