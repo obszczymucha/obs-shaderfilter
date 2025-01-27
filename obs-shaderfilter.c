@@ -2579,12 +2579,13 @@ static void shader_filter_tick(void *data, float seconds)
 		if (filter->enabled)
 			filter->shader_enable_time = filter->elapsed_time;
 	}
-	if (obs_source_enabled(filter->context) && obs_source_active(obs_filter_get_parent(filter->context))) {
+	obs_source_t *parent = obs_filter_get_parent(filter->context);
+	if (obs_source_enabled(filter->context) && parent && obs_source_active(parent)) {
 		filter->shader_active_time += seconds;
 	} else {
 		filter->shader_active_time = 0.0f;
 	}
-	if (obs_source_enabled(filter->context) && obs_source_showing(obs_filter_get_parent(filter->context))) {
+	if (obs_source_enabled(filter->context) && parent && obs_source_showing(parent)) {
 		filter->shader_show_time += seconds;
 	} else {
 		filter->shader_show_time = 0.0f;
