@@ -2754,6 +2754,9 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 	if (filter->param_loops != NULL) {
 		gs_effect_set_int(filter->param_loops, filter->loops);
 	}
+	if (filter->param_loop_second != NULL) {
+		gs_effect_set_float(filter->param_loop_second, filter->elapsed_time_loop);
+	}
 	if (filter->param_rand_f != NULL) {
 		gs_effect_set_float(filter->param_rand_f, filter->rand_f);
 	}
