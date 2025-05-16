@@ -25,6 +25,8 @@
 
 #include "version.h"
 
+float (*move_get_transition_filter)(obs_source_t *filter_from, obs_source_t **filter_to) = NULL;
+
 #define nullptr ((void *)0)
 
 static const char *effect_template_begin = "\
@@ -2866,6 +2868,116 @@ static void render_shader(struct shader_filter_data *filter)
 	}
 	shader_filter_set_effect_params(filter);
 
+	float f = 0.0f;
+	obs_source_t *filter_to = NULL;
+	if (move_get_transition_filter)
+		f = move_get_transition_filter(filter->context, &filter_to);
+
+	if (f > 0.0f) {
+		if (filter_to) {
+
+			struct shader_filter_data *filter2 = obs_obj_get_data(filter_to);
+			for (size_t i = 0; i < filter->stored_param_list.num; i++) {
+				struct effect_param_data *param = (filter->stored_param_list.array + i);
+				if (!param->param)
+					continue;
+
+				for (size_t j = 0; j < filter->stored_param_list.num; j++) {
+					struct effect_param_data *param2 = (filter2->stored_param_list.array + i);
+					if (!param2->param)
+						continue;
+					if (param->type != param2->type)
+						continue;
+					if (strcmp(param->name.array, param2->name.array) != 0)
+						continue;
+
+					switch (param->type) {
+					case GS_SHADER_PARAM_FLOAT:
+						gs_effect_set_float(param->param, (float)param2->value.f * f +
+											  (float)param->value.f * (1.0f - f));
+						break;
+					case GS_SHADER_PARAM_INT:
+						gs_effect_set_int(param->param, (int)((double)param2->value.i * f +
+										      (double)param->value.i * (1.0f - f)));
+						break;
+					case GS_SHADER_PARAM_VEC2: {
+						struct vec2 v2;
+						v2.x = (float)param2->value.vec2.x * f + (float)param->value.vec2.x * (1.0f - f);
+						v2.y = (float)param2->value.vec2.y * f + (float)param->value.vec2.y * (1.0f - f);
+						gs_effect_set_vec2(param->param, &v2);
+						break;
+					}
+					case GS_SHADER_PARAM_VEC3: {
+						struct vec3 v3;
+						v3.x = (float)param2->value.vec3.x * f + (float)param->value.vec3.x * (1.0f - f);
+						v3.y = (float)param2->value.vec3.y * f + (float)param->value.vec3.y * (1.0f - f);
+						v3.z = (float)param2->value.vec3.z * f + (float)param->value.vec3.z * (1.0f - f);
+						gs_effect_set_vec3(param->param, &v3);
+						break;
+					}
+					case GS_SHADER_PARAM_VEC4: {
+						struct vec4 v4;
+						v4.x = (float)param2->value.vec4.x * f + (float)param->value.vec4.x * (1.0f - f);
+						v4.y = (float)param2->value.vec4.y * f + (float)param->value.vec4.y * (1.0f - f);
+						v4.z = (float)param2->value.vec4.z * f + (float)param->value.vec4.z * (1.0f - f);
+						v4.w = (float)param2->value.vec4.w * f + (float)param->value.vec4.w * (1.0f - f);
+						gs_effect_set_vec4(param->param, &v4);
+						break;
+					}
+					default:;
+					}
+					break;
+				}
+			}
+		} else {
+			for (size_t i = 0; i < filter->stored_param_list.num; i++) {
+				struct effect_param_data *param = (filter->stored_param_list.array + i);
+				if (!param->param)
+					continue;
+
+				void *default_value = gs_effect_get_default_val(param->param);
+				if (!default_value)
+					continue;
+
+				switch (param->type) {
+				case GS_SHADER_PARAM_FLOAT:
+					gs_effect_set_float(param->param,
+							    *((float *)default_value) * f + (float)param->value.f * (1.0f - f));
+					break;
+				case GS_SHADER_PARAM_INT:
+					gs_effect_set_int(param->param, (int)((double)*((int *)default_value) * f +
+									      (double)param->value.i * (1.0f - f)));
+					break;
+				case GS_SHADER_PARAM_VEC2: {
+					struct vec2 v2;
+					v2.x = ((struct vec2 *)default_value)->x * f + (float)param->value.vec2.x * (1.0f - f);
+					v2.y = ((struct vec2 *)default_value)->y * f + (float)param->value.vec2.y * (1.0f - f);
+					gs_effect_set_vec2(param->param, &v2);
+					break;
+				}
+				case GS_SHADER_PARAM_VEC3: {
+					struct vec3 v3;
+					v3.x = ((struct vec3 *)default_value)->x * f + (float)param->value.vec3.x * (1.0f - f);
+					v3.y = ((struct vec3 *)default_value)->y * f + (float)param->value.vec3.y * (1.0f - f);
+					v3.z = ((struct vec3 *)default_value)->z * f + (float)param->value.vec3.z * (1.0f - f);
+					gs_effect_set_vec3(param->param, &v3);
+					break;
+				}
+				case GS_SHADER_PARAM_VEC4: {
+					struct vec4 v4;
+					v4.x = ((struct vec4 *)default_value)->x * f + (float)param->value.vec4.x * (1.0f - f);
+					v4.y = ((struct vec4 *)default_value)->y * f + (float)param->value.vec4.y * (1.0f - f);
+					v4.z = ((struct vec4 *)default_value)->z * f + (float)param->value.vec4.z * (1.0f - f);
+					v4.w = ((struct vec4 *)default_value)->w * f + (float)param->value.vec4.w * (1.0f - f);
+					gs_effect_set_vec4(param->param, &v4);
+					break;
+				}
+				default:;
+				}
+			}
+		}
+	}
+
 	gs_blend_state_push();
 	gs_reset_blend_state();
 	gs_enable_blending(false);
@@ -2905,6 +3017,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	filter->rendered = true;
 	filter->rendering = false;
 }
+
 static uint32_t shader_filter_getwidth(void *data)
 {
 	struct shader_filter_data *filter = data;
@@ -3159,3 +3272,17 @@ bool obs_module_load(void)
 }
 
 void obs_module_unload(void) {}
+
+void obs_module_post_load()
+{
+	if (obs_get_module("move-transition") == NULL)
+		return;
+	proc_handler_t *ph = obs_get_proc_handler();
+	struct calldata cd;
+	calldata_init(&cd);
+	calldata_set_string(&cd, "filter_id", shader_filter.id);
+	if (proc_handler_call(ph, "move_get_transition_filter_function", &cd)) {
+		move_get_transition_filter = calldata_ptr(&cd, "callback");
+	}
+	calldata_free(&cd);
+}
