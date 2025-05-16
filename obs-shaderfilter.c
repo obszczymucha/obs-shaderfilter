@@ -2854,7 +2854,7 @@ void shader_filter_set_effect_params(struct shader_filter_data *filter)
 	}
 }
 
-static void render_shader(struct shader_filter_data *filter)
+static void render_shader(struct shader_filter_data *filter, float f, obs_source_t *filter_to)
 {
 	gs_texture_t *texture = gs_texrender_get_texture(filter->input_texrender);
 	if (!texture) {
@@ -2867,11 +2867,6 @@ static void render_shader(struct shader_filter_data *filter)
 		gs_effect_set_texture(filter->param_image, texture);
 	}
 	shader_filter_set_effect_params(filter);
-
-	float f = 0.0f;
-	obs_source_t *filter_to = NULL;
-	if (move_get_transition_filter)
-		f = move_get_transition_filter(filter->context, &filter_to);
 
 	if (f > 0.0f) {
 		if (filter_to) {
@@ -3000,7 +2995,12 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 
 	struct shader_filter_data *filter = data;
 
-	if (filter->rendered) {
+	float f = 0.0f;
+	obs_source_t *filter_to = NULL;
+	if (move_get_transition_filter)
+		f = move_get_transition_filter(filter->context, &filter_to);
+
+	if (f == 0.0f && filter->rendered) {
 		draw_output(filter);
 		return;
 	}
@@ -3013,9 +3013,10 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	get_input_source(filter);
 
 	filter->rendering = true;
-	render_shader(filter);
+	render_shader(filter, f, filter_to);
 	draw_output(filter);
-	filter->rendered = true;
+	if (f == 0.0f)
+		filter->rendered = true;
 	filter->rendering = false;
 }
 
