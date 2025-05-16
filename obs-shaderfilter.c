@@ -2974,6 +2974,7 @@ static void render_shader(struct shader_filter_data *filter)
 				}
 				default:;
 				}
+				bfree(default_value);
 			}
 		}
 	}
