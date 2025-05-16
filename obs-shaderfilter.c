@@ -141,6 +141,15 @@ struct effect_param_data {
 		struct vec3 vec3;
 		struct vec4 vec4;
 	} value;
+	union {
+		long long i;
+		double f;
+		char *string;
+		struct vec2 vec2;
+		struct vec3 vec3;
+		struct vec4 vec4;
+	} default_value;
+	bool has_default;
 	char *label;
 	union {
 		long long i;
@@ -2360,20 +2369,30 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 		struct dstr sources_name = {0};
 		obs_source_t *source = NULL;
 		void *default_value = gs_effect_get_default_val(param->param);
+		param->has_default = false;
 		switch (param->type) {
 		case GS_SHADER_PARAM_BOOL:
-			if (default_value != NULL)
+			if (default_value != NULL) {
 				obs_data_set_default_bool(settings, param_name, *(bool *)default_value);
+				param->default_value.i = *(bool *)default_value;
+				param->has_default = true;
+			}
 			param->value.i = obs_data_get_bool(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_FLOAT:
-			if (default_value != NULL)
+			if (default_value != NULL) {
 				obs_data_set_default_double(settings, param_name, *(float *)default_value);
+				param->default_value.f = *(float *)default_value;
+				param->has_default = true;
+			}
 			param->value.f = obs_data_get_double(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_INT:
-			if (default_value != NULL)
+			if (default_value != NULL) {
 				obs_data_set_default_int(settings, param_name, *(int *)default_value);
+				param->default_value.i = *(int *)default_value;
+				param->has_default = true;
+			}
 			param->value.i = obs_data_get_int(settings, param_name);
 			break;
 		case GS_SHADER_PARAM_VEC2: {
@@ -2381,8 +2400,11 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 
 			for (size_t i = 0; i < 2; i++) {
 				dstr_printf(&sources_name, "%s_%zu", param_name, i);
-				if (xy != NULL)
+				if (xy != NULL) {
 					obs_data_set_default_double(settings, sources_name.array, xy->ptr[i]);
+					param->default_value.vec2.ptr[i] = xy->ptr[i];
+					param->has_default = true;
+				}
 				param->value.vec2.ptr[i] = (float)obs_data_get_double(settings, sources_name.array);
 			}
 			dstr_free(&sources_name);
@@ -2393,8 +2415,11 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			if (param->widget_type.array && strcmp(param->widget_type.array, "slider") == 0) {
 				for (size_t i = 0; i < 3; i++) {
 					dstr_printf(&sources_name, "%s_%zu", param_name, i);
-					if (rgb != NULL)
+					if (rgb != NULL) {
 						obs_data_set_default_double(settings, sources_name.array, rgb->ptr[i]);
+						param->default_value.vec3.ptr[i] = rgb->ptr[i];
+						param->has_default = true;
+					}
 					param->value.vec3.ptr[i] = (float)obs_data_get_double(settings, sources_name.array);
 				}
 				dstr_free(&sources_name);
@@ -2403,6 +2428,8 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 					struct vec4 rgba;
 					vec4_from_vec3(&rgba, rgb);
 					obs_data_set_default_int(settings, param_name, vec4_to_rgba(&rgba));
+					param->default_value.vec4 = rgba;
+					param->has_default = true;
 				} else {
 					// Hack to ensure we have a default...(white)
 					obs_data_set_default_int(settings, param_name, 0xffffffff);
@@ -2416,14 +2443,19 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			if (param->widget_type.array && strcmp(param->widget_type.array, "slider") == 0) {
 				for (size_t i = 0; i < 4; i++) {
 					dstr_printf(&sources_name, "%s_%zu", param_name, i);
-					if (rgba != NULL)
+					if (rgba != NULL) {
 						obs_data_set_default_double(settings, sources_name.array, rgba->ptr[i]);
+						param->default_value.vec4.ptr[i] = rgba->ptr[i];
+						param->has_default = true;
+					}
 					param->value.vec4.ptr[i] = (float)obs_data_get_double(settings, sources_name.array);
 				}
 				dstr_free(&sources_name);
 			} else {
 				if (rgba != NULL) {
 					obs_data_set_default_int(settings, param_name, vec4_to_rgba(rgba));
+					param->default_value.vec4 = *rgba;
+					param->has_default = true;
 				} else {
 					// Hack to ensure we have a default...(white)
 					obs_data_set_default_int(settings, param_name, 0xffffffff);
@@ -2927,49 +2959,44 @@ static void render_shader(struct shader_filter_data *filter, float f, obs_source
 		} else {
 			for (size_t i = 0; i < filter->stored_param_list.num; i++) {
 				struct effect_param_data *param = (filter->stored_param_list.array + i);
-				if (!param->param)
-					continue;
-
-				void *default_value = gs_effect_get_default_val(param->param);
-				if (!default_value)
+				if (!param->param || !param->has_default)
 					continue;
 
 				switch (param->type) {
 				case GS_SHADER_PARAM_FLOAT:
-					gs_effect_set_float(param->param,
-							    *((float *)default_value) * f + (float)param->value.f * (1.0f - f));
+					gs_effect_set_float(param->param, (float)param->default_value.f * f + (float)param->value.f * (1.0f - f));
 					break;
 				case GS_SHADER_PARAM_INT:
-					gs_effect_set_int(param->param, (int)((double)*((int *)default_value) * f +
+					gs_effect_set_int(param->param,
+							  (int)((double)param->default_value.i * f +
 									      (double)param->value.i * (1.0f - f)));
 					break;
 				case GS_SHADER_PARAM_VEC2: {
 					struct vec2 v2;
-					v2.x = ((struct vec2 *)default_value)->x * f + (float)param->value.vec2.x * (1.0f - f);
-					v2.y = ((struct vec2 *)default_value)->y * f + (float)param->value.vec2.y * (1.0f - f);
+					v2.x = param->default_value.vec2.x * f + param->value.vec2.x * (1.0f - f);
+					v2.y = param->default_value.vec2.y * f + param->value.vec2.y * (1.0f - f);
 					gs_effect_set_vec2(param->param, &v2);
 					break;
 				}
 				case GS_SHADER_PARAM_VEC3: {
 					struct vec3 v3;
-					v3.x = ((struct vec3 *)default_value)->x * f + (float)param->value.vec3.x * (1.0f - f);
-					v3.y = ((struct vec3 *)default_value)->y * f + (float)param->value.vec3.y * (1.0f - f);
-					v3.z = ((struct vec3 *)default_value)->z * f + (float)param->value.vec3.z * (1.0f - f);
+					v3.x = param->default_value.vec3.x * f + param->value.vec3.x * (1.0f - f);
+					v3.y = param->default_value.vec3.y * f + param->value.vec3.y * (1.0f - f);
+					v3.z = param->default_value.vec3.z * f + param->value.vec3.z * (1.0f - f);
 					gs_effect_set_vec3(param->param, &v3);
 					break;
 				}
 				case GS_SHADER_PARAM_VEC4: {
 					struct vec4 v4;
-					v4.x = ((struct vec4 *)default_value)->x * f + (float)param->value.vec4.x * (1.0f - f);
-					v4.y = ((struct vec4 *)default_value)->y * f + (float)param->value.vec4.y * (1.0f - f);
-					v4.z = ((struct vec4 *)default_value)->z * f + (float)param->value.vec4.z * (1.0f - f);
-					v4.w = ((struct vec4 *)default_value)->w * f + (float)param->value.vec4.w * (1.0f - f);
+					v4.x = param->default_value.vec4.x * f + param->value.vec4.x * (1.0f - f);
+					v4.y = param->default_value.vec4.y * f + param->value.vec4.y * (1.0f - f);
+					v4.z = param->default_value.vec4.z * f + param->value.vec4.z * (1.0f - f);
+					v4.w = param->default_value.vec4.w * f + param->value.vec4.w * (1.0f - f);
 					gs_effect_set_vec4(param->param, &v4);
 					break;
 				}
 				default:;
 				}
-				bfree(default_value);
 			}
 		}
 	}
