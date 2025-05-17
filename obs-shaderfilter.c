@@ -2511,6 +2511,7 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 						char *abs_path = os_get_abs_path_ptr(path);
 						obs_data_set_default_string(settings, param_name, abs_path);
 						bfree(abs_path);
+						param->has_default = true;
 					} else {
 						struct dstr texture_path = {0};
 						dstr_init(&texture_path);
@@ -2520,6 +2521,7 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 						char *abs_path = os_get_abs_path_ptr(texture_path.array);
 						if (os_file_exists(abs_path)) {
 							obs_data_set_default_string(settings, param_name, abs_path);
+							param->has_default = true;
 						}
 						bfree(abs_path);
 						dstr_free(&texture_path);
@@ -2559,8 +2561,10 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 			}
 			break;
 		case GS_SHADER_PARAM_STRING:
-			if (default_value != NULL)
+			if (default_value != NULL) {
 				obs_data_set_default_string(settings, param_name, (const char *)default_value);
+				param->has_default = true;
+			}
 			param->value.string = (char *)obs_data_get_string(settings, param_name);
 			break;
 		default:;
