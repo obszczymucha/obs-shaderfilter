@@ -3,14 +3,14 @@
 // Adapted from https://www.iquilezles.org/www/articles/ibilinear/ibilinear.htm
 // and this Shadertoy example https://www.shadertoy.com/view/lsBSDm
 
-uniform float _DRx;
-uniform float _DRy;
-uniform float _DLx;
-uniform float _DLy;
-uniform float _TLx;
-uniform float _TLy;
-uniform float _TRx;
-uniform float _TRy;
+uniform float _DRx = 0.0;
+uniform float _DRy = 0.0;
+uniform float _DLx = 0.0;
+uniform float _DLy = 0.0;
+uniform float _TLx = 0.0;
+uniform float _TLy = 0.0;
+uniform float _TRx = 0.0;
+uniform float _TRy = 0.0;
 
 float cross2d(float2 a, float2 b)
 {
