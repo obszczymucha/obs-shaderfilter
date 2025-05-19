@@ -171,7 +171,9 @@ struct shader_filter_data {
 	gs_effect_t *output_effect;
 
 	gs_texrender_t *input_texrender;
+	gs_texrender_t *previous_input_texrender;
 	gs_texrender_t *output_texrender;
+	gs_texrender_t *previous_output_texrender;
 	gs_eparam_t *param_output_image;
 
 	bool reload_effect;
@@ -215,10 +217,12 @@ struct shader_filter_data {
 	gs_eparam_t *param_rand_instance_f;
 	gs_eparam_t *param_rand_activation_f;
 	gs_eparam_t *param_image;
+	gs_eparam_t *param_previous_image;
 	gs_eparam_t *param_image_a;
 	gs_eparam_t *param_image_b;
 	gs_eparam_t *param_transition_time;
 	gs_eparam_t *param_convert_linear;
+	gs_eparam_t *param_previous_output;
 
 	int expand_left;
 	int expand_right;
@@ -347,10 +351,12 @@ static void shader_filter_clear_params(struct shader_filter_data *filter)
 	filter->param_loop_second = NULL;
 	filter->param_local_time = NULL;
 	filter->param_image = NULL;
+	filter->param_previous_image = NULL;
 	filter->param_image_a = NULL;
 	filter->param_image_b = NULL;
 	filter->param_transition_time = NULL;
 	filter->param_convert_linear = NULL;
+	filter->param_previous_output = NULL;
 
 	size_t param_count = filter->stored_param_list.num;
 	for (size_t param_index = 0; param_index < param_count; param_index++) {
@@ -593,6 +599,10 @@ static void shader_filter_reload_effect(struct shader_filter_data *filter)
 			// Nothing.
 		} else if (strcmp(info.name, "image") == 0) {
 			filter->param_image = param;
+		} else if (strcmp(info.name, "previous_image") == 0) {
+			filter->param_previous_image = param;
+		} else if (strcmp(info.name, "previous_output") == 0) {
+			filter->param_previous_output = param;
 		} else if (filter->transition && strcmp(info.name, "image_a") == 0) {
 			filter->param_image_a = param;
 		} else if (filter->transition && strcmp(info.name, "image_b") == 0) {
@@ -704,6 +714,10 @@ static void shader_filter_destroy(void *data)
 		gs_texrender_destroy(filter->input_texrender);
 	if (filter->output_texrender)
 		gs_texrender_destroy(filter->output_texrender);
+	if (filter->previous_input_texrender)
+		gs_texrender_destroy(filter->previous_input_texrender);
+	if (filter->previous_output_texrender)
+		gs_texrender_destroy(filter->previous_output_texrender);
 
 	obs_leave_graphics();
 
@@ -2662,6 +2676,12 @@ static void get_input_source(struct shader_filter_data *filter)
 
 	const enum gs_color_format format = gs_get_format_from_space(source_space);
 
+	if (filter->param_previous_image) {
+		gs_texrender_t *temp = filter->input_texrender;
+		filter->input_texrender = filter->previous_input_texrender;
+		filter->previous_input_texrender = temp;
+	}
+
 	// Set up our input_texrender to catch the output texture.
 	filter->input_texrender = create_or_reset_texrender(filter->input_texrender);
 
@@ -2897,11 +2917,20 @@ static void render_shader(struct shader_filter_data *filter, float f, obs_source
 		return;
 	}
 
+	if (filter->param_previous_output) {
+		gs_texrender_t *temp = filter->output_texrender;
+		filter->output_texrender = filter->previous_output_texrender;
+		filter->previous_output_texrender = temp;
+	}
 	filter->output_texrender = create_or_reset_texrender(filter->output_texrender);
 
-	if (filter->param_image) {
+	if (filter->param_image)
 		gs_effect_set_texture(filter->param_image, texture);
-	}
+	if (filter->param_previous_image)
+		gs_effect_set_texture(filter->param_previous_image, gs_texrender_get_texture(filter->previous_input_texrender));
+	if (filter->param_previous_output)
+		gs_effect_set_texture(filter->param_previous_output, gs_texrender_get_texture(filter->previous_output_texrender));
+
 	shader_filter_set_effect_params(filter);
 
 	if (f > 0.0f) {
@@ -2968,11 +2997,11 @@ static void render_shader(struct shader_filter_data *filter, float f, obs_source
 
 				switch (param->type) {
 				case GS_SHADER_PARAM_FLOAT:
-					gs_effect_set_float(param->param, (float)param->default_value.f * f + (float)param->value.f * (1.0f - f));
+					gs_effect_set_float(param->param,
+							    (float)param->default_value.f * f + (float)param->value.f * (1.0f - f));
 					break;
 				case GS_SHADER_PARAM_INT:
-					gs_effect_set_int(param->param,
-							  (int)((double)param->default_value.i * f +
+					gs_effect_set_int(param->param, (int)((double)param->default_value.i * f +
 									      (double)param->value.i * (1.0f - f)));
 					break;
 				case GS_SHADER_PARAM_VEC2: {
