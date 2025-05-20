@@ -184,7 +184,8 @@ struct shader_filter_data {
 	bool prev_transitioning;
 
 	bool use_pm_alpha;
-	bool rendered;
+	bool output_rendered;
+	bool input_rendered;
 
 	float shader_start_time;
 	float shader_show_time;
@@ -2646,7 +2647,8 @@ static void shader_filter_tick(void *data, float seconds)
 	// undecided between this and "rand_float(1);"
 	filter->rand_f = (float)((double)rand_interval(0, 10000) / (double)10000);
 
-	filter->rendered = false;
+	filter->output_rendered = false;
+	filter->input_rendered = false;
 }
 
 gs_texrender_t *create_or_reset_texrender(gs_texrender_t *render)
@@ -2661,6 +2663,9 @@ gs_texrender_t *create_or_reset_texrender(gs_texrender_t *render)
 
 static void get_input_source(struct shader_filter_data *filter)
 {
+	if (filter->input_rendered)
+		return;
+
 	// Use the OBS default effect file as our effect.
 	gs_effect_t *pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
 
@@ -2710,6 +2715,7 @@ static void get_input_source(struct shader_filter_data *filter)
 							   technique);
 		gs_texrender_end(filter->input_texrender);
 		gs_blend_state_pop();
+		filter->input_rendered = true;
 	}
 }
 
@@ -3060,7 +3066,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	if (move_get_transition_filter)
 		f = move_get_transition_filter(filter->context, &filter_to);
 
-	if (f == 0.0f && filter->rendered) {
+	if (f == 0.0f && filter->output_rendered) {
 		draw_output(filter);
 		return;
 	}
@@ -3076,7 +3082,7 @@ static void shader_filter_render(void *data, gs_effect_t *effect)
 	render_shader(filter, f, filter_to);
 	draw_output(filter);
 	if (f == 0.0f)
-		filter->rendered = true;
+		filter->output_rendered = true;
 	filter->rendering = false;
 }
 
