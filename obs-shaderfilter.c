@@ -120,7 +120,6 @@ struct effect_param_data {
 	struct dstr name;
 	struct dstr display_name;
 	struct dstr widget_type;
-	struct dstr description;
 	struct dstr group;
 	struct dstr path;
 	DARRAY(int) option_values;
@@ -391,7 +390,6 @@ static void shader_filter_clear_params(struct shader_filter_data *filter)
 		dstr_free(&param->name);
 		dstr_free(&param->display_name);
 		dstr_free(&param->widget_type);
-		dstr_free(&param->description);
 		dstr_free(&param->group);
 		dstr_free(&param->path);
 		da_free(param->option_values);
