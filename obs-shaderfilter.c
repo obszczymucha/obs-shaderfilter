@@ -2184,11 +2184,23 @@ static obs_properties_t *shader_filter_properties(void *data)
 		obs_properties_add_int(props, "expand_top", obs_module_text("ShaderFilter.ExpandTop"), 0, 9999, 1);
 		obs_properties_add_int(props, "expand_bottom", obs_module_text("ShaderFilter.ExpandBottom"), 0, 9999, 1);
 		
-		obs_property_t *audio_source = obs_properties_add_list(props, "audio_source", "Audio source", 
-			OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
-		obs_property_list_add_string(audio_source, "None", "");
+		bool show_audio_property = false;
+
+		if (filter && filter->context) {
+			obs_source_t *target = obs_filter_get_target(filter->context);
+			bool target_has_audio = target && (obs_source_get_output_flags(target) & OBS_SOURCE_AUDIO) != 0;
+			bool shader_uses_audio = (filter->param_audio_peak != NULL || filter->param_audio_magnitude != NULL);
+			
+			show_audio_property = !target_has_audio && shader_uses_audio;
+		}
 		
-		obs_enum_sources(shader_filter_enum_audio_sources, audio_source);
+		if (show_audio_property) {
+			obs_property_t *audio_source = obs_properties_add_list(props, "audio_source", "Audio source", 
+				OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
+			obs_property_list_add_string(audio_source, "None", "");
+			
+			obs_enum_sources(shader_filter_enum_audio_sources, audio_source);
+		}
 	}
 
 	obs_properties_add_bool(props, "override_entire_effect", obs_module_text("ShaderFilter.OverrideEntireEffect"));
