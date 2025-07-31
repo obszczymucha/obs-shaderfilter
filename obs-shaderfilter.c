@@ -2464,18 +2464,14 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 	
 	const char *audio_source_name = obs_data_get_string(settings, "audio_source");
 
-	// Only recreate volmeter if audio source name changed
 	bool audio_source_changed = false;
-	if (!filter->audio_source_name && (!audio_source_name || strlen(audio_source_name) == 0)) {
-		// Both are empty/null, no change
+
+	if (!filter->audio_source_name && (!audio_source_name || strlen(audio_source_name) == 0))
 		audio_source_changed = false;
-	} else if (!filter->audio_source_name || !audio_source_name || strlen(audio_source_name) == 0) {
-		// One is empty/null, the other isn't
+	else if (!filter->audio_source_name || !audio_source_name || strlen(audio_source_name) == 0)
 		audio_source_changed = true;
-	} else {
-		// Both have values, compare them
+	else
 		audio_source_changed = strcmp(filter->audio_source_name, audio_source_name) != 0;
-	}
 
 	if (audio_source_changed) {
 		if (filter->volmeter) {
@@ -2490,6 +2486,14 @@ static void shader_filter_update(void *data, obs_data_t *settings)
 
 		if (audio_source_name && strlen(audio_source_name) > 0) {
 			filter->audio_source_name = bstrdup(audio_source_name);
+			obs_source_t *audio_source = obs_get_source_by_name(audio_source_name);
+
+			if (audio_source) {
+				filter->volmeter = obs_volmeter_create(OBS_FADER_LOG);
+				obs_volmeter_attach_source(filter->volmeter, audio_source);
+				obs_volmeter_add_callback(filter->volmeter, shader_filter_audio_callback, filter);
+				obs_source_release(audio_source);
+			}
 		}
 	}
 
@@ -2770,21 +2774,9 @@ static void shader_filter_tick(void *data, float seconds)
 	// undecided between this and "rand_float(1);"
 	filter->rand_f = (float)((double)rand_interval(0, 10000) / (double)10000);
 
-	if (filter->audio_source_name && strlen(filter->audio_source_name) > 0) {
-		obs_source_t *audio_source = obs_get_source_by_name(filter->audio_source_name);
-		if (audio_source) {
-			if (!filter->volmeter) {
-				filter->volmeter = obs_volmeter_create(OBS_FADER_LOG);
-				obs_volmeter_attach_source(filter->volmeter, audio_source);
-				obs_volmeter_add_callback(filter->volmeter, shader_filter_audio_callback, filter);
-			}
-			filter->audio_peak = filter->current_audio_peak;
-			filter->audio_magnitude = filter->current_audio_magnitude;
-			obs_source_release(audio_source);
-		} else {
-			filter->audio_peak = 0.0f;
-			filter->audio_magnitude = 0.0f;
-		}
+	if (filter->volmeter) {
+		filter->audio_peak = filter->current_audio_peak;
+		filter->audio_magnitude = filter->current_audio_magnitude;
 	} else {
 		filter->audio_peak = 0.0f;
 		filter->audio_magnitude = 0.0f;
