@@ -25,6 +25,7 @@
 #endif
 
 #include "version.h"
+#include "obs-websocket-api.h"
 
 float (*move_get_transition_filter)(obs_source_t *filter_from, obs_source_t **filter_to) = NULL;
 
@@ -261,6 +262,7 @@ struct shader_filter_data {
 	float current_audio_magnitude;
 
 	DARRAY(struct effect_param_data) stored_param_list;
+	
 };
 
 static unsigned int rand_interval(unsigned int min, unsigned int max)
@@ -477,6 +479,69 @@ static void load_sprite_buffer(struct shader_filter_data *filter)
 	memset(vbd->points, 0, sizeof(struct vec3) * 4);
 	memset(vbd->tvarray[0].array, 0, sizeof(struct vec2) * 4);
 	filter->sprite_buffer = gs_vertexbuffer_create(vbd, GS_DYNAMIC);
+}
+
+
+static void websocket_reload_callback(void *data)
+{
+	struct shader_filter_data *filter = (struct shader_filter_data *)data;
+	filter->reload_effect = true;
+	obs_source_update(filter->context, NULL);
+	blog(LOG_INFO, "obs-shaderfilter: WebSocket triggered effect reload");
+}
+
+static void reload_effect_vendor_request(obs_data_t *request_data, obs_data_t *response_data, void *priv_data)
+{
+	const char *source_name = obs_data_get_string(request_data, "sourceName");
+	const char *filter_name = obs_data_get_string(request_data, "filterName");
+	
+	blog(LOG_INFO, "obs-shaderfilter: Received vendor reload request for source '%s', filter '%s'", 
+		source_name ? source_name : "null", filter_name ? filter_name : "null");
+	
+	if (!source_name || !filter_name) {
+		obs_data_set_string(response_data, "error", "Missing sourceName or filterName in request");
+		return;
+	}
+	
+	// Find the source
+	obs_source_t *source = obs_get_source_by_name(source_name);
+	if (!source) {
+		obs_data_set_string(response_data, "error", "Source not found");
+		return;
+	}
+	
+	// Find the filter on the source
+	obs_source_t *filter_source = obs_source_get_filter_by_name(source, filter_name);
+	if (!filter_source) {
+		obs_source_release(source);
+		obs_data_set_string(response_data, "error", "Filter not found on source");
+		return;
+	}
+	
+	// Check if this is a shader filter
+	const char *filter_id = obs_source_get_id(filter_source);
+	if (strcmp(filter_id, "shader_filter") != 0) {
+		obs_source_release(filter_source);
+		obs_source_release(source);
+		obs_data_set_string(response_data, "error", "Filter is not a shader filter");
+		return;
+	}
+	
+	// Get the filter data and trigger reload
+	struct shader_filter_data *filter_data = obs_obj_get_data(filter_source);
+	if (filter_data) {
+		filter_data->reload_effect = true;
+		obs_source_update(filter_source, NULL);
+		blog(LOG_INFO, "obs-shaderfilter: Successfully reloaded effect for '%s' -> '%s'", source_name, filter_name);
+		obs_data_set_bool(response_data, "success", true);
+	} else {
+		obs_data_set_string(response_data, "error", "Failed to get filter data");
+	}
+	
+	obs_source_release(filter_source);
+	obs_source_release(source);
+	
+	UNUSED_PARAMETER(priv_data);
 }
 
 static void shader_filter_reload_effect(struct shader_filter_data *filter)
@@ -3509,6 +3574,7 @@ bool obs_module_load(void)
 	obs_register_source(&shader_filter);
 	obs_register_source(&shader_transition);
 
+
 	return true;
 }
 
@@ -3516,14 +3582,26 @@ void obs_module_unload(void) {}
 
 void obs_module_post_load()
 {
-	if (obs_get_module("move-transition") == NULL)
-		return;
-	proc_handler_t *ph = obs_get_proc_handler();
-	struct calldata cd;
-	calldata_init(&cd);
-	calldata_set_string(&cd, "filter_id", shader_filter.id);
-	if (proc_handler_call(ph, "move_get_transition_filter_function", &cd)) {
-		move_get_transition_filter = calldata_ptr(&cd, "callback");
+	if (obs_get_module("move-transition") != NULL) {
+		proc_handler_t *ph = obs_get_proc_handler();
+		struct calldata cd;
+		calldata_init(&cd);
+		calldata_set_string(&cd, "filter_id", shader_filter.id);
+		if (proc_handler_call(ph, "move_get_transition_filter_function", &cd)) {
+			move_get_transition_filter = calldata_ptr(&cd, "callback");
+		}
+		calldata_free(&cd);
 	}
-	calldata_free(&cd);
+	
+	obs_websocket_vendor vendor = obs_websocket_register_vendor("shader_filter");
+
+	if (vendor) {
+		if (obs_websocket_vendor_register_request(vendor, "reload_effect", reload_effect_vendor_request, NULL)) {
+			blog(LOG_INFO, "[obs-shaderfilter] Registered vendor request 'reload_effect' with obs-websocket");
+		} else {
+			blog(LOG_WARNING, "[obs-shaderfilter] Failed to register vendor request with obs-websocket");
+		}
+	} else {
+		blog(LOG_INFO, "[obs-shaderfilter] obs-websocket vendor API not available - use manual reload instead");
+	}
 }
